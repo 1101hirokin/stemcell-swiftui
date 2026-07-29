@@ -13,6 +13,8 @@ public struct StemcellColors: Sendable, Hashable {
     public var fgMuted: DynamicColor
     public var primaryBackground: DynamicColor
     public var primaryForeground: DynamicColor
+    /// modal の背後に敷く veil（elevation.md §6）。半透明で持つ。
+    public var scrim: DynamicColor
 
     public init(
         background: DynamicColor,
@@ -21,7 +23,8 @@ public struct StemcellColors: Sendable, Hashable {
         border: DynamicColor,
         fgMuted: DynamicColor,
         primaryBackground: DynamicColor,
-        primaryForeground: DynamicColor
+        primaryForeground: DynamicColor,
+        scrim: DynamicColor
     ) {
         self.background = background
         self.foreground = foreground
@@ -30,6 +33,7 @@ public struct StemcellColors: Sendable, Hashable {
         self.fgMuted = fgMuted
         self.primaryBackground = primaryBackground
         self.primaryForeground = primaryForeground
+        self.scrim = scrim
     }
 }
 
@@ -79,6 +83,15 @@ extension StemcellTheme {
             primaryForeground: .init(
                 light: StemcellThemeStandardLight.Color.Semantic.Primary.fg,
                 dark: StemcellThemeStandardDark.Color.Semantic.Primary.fg
+            ),
+            // トークンの `scrim` は veil で、本来 0.4 の不透明度を持つ。いま引いている
+            // 0.0.0-alpha.16 の Swift 出力はそれを落としていて不透明のまま出る。
+            // 直しは stemcell-tokens の PR #24 にあるが、版がまだ切られていない。
+            // それまでは値を自前で当てる。elevation.md §6 が「基底色を自前で透過させ直さない」
+            // と定めているところなので、版が上がったら消す。HOLES #13。
+            scrim: .init(
+                light: StemcellThemeStandardLight.scrim.opacity(0.4),
+                dark: StemcellThemeStandardDark.scrim.opacity(0.4)
             )
         )
     )

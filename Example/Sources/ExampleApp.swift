@@ -28,6 +28,8 @@ struct Gallery: View {
     @State private var on = true
     @State private var checked = true
     @State private var mixed = false
+    @State private var lightOpen = false
+    @State private var explicitOpen = false
 
     var body: some View {
         ScrollView {
@@ -116,6 +118,16 @@ struct Gallery: View {
                         }
                     }
 
+                    // 中央に開く modal。焦点が中へ入るか、閉じたら元へ戻るかを見る場所である。
+                    Row("覆い") {
+                        Stack(direction: .inline, gap: "sm", align: .center) {
+                            Button("light で開く") { lightOpen = true }
+                                .buttonStyle(.stemcell())
+                            Button("explicit で開く") { explicitOpen = true }
+                                .buttonStyle(.stemcell(.outlined))
+                        }
+                    }
+
                     // 交差軸の揃えは、提案を受ける子と受けない子で見え方が割れる。両方を並べる。
                     // 橙は提案をそのまま受ける子（Color）、緑は自分の理想で止まる子（Text）である。
                     // 背の高い子を混ぜて、行の交差軸をそこで決めさせている。
@@ -151,6 +163,21 @@ struct Gallery: View {
         }
         .background(theme.colors.background.resolved)
         .stemcellDensity(density)
+        .stemcellDialog(isPresented: $lightOpen) {
+            Text("下書きを捨てる")
+        } content: {
+            Text("この画面で書いたものは残りません。背後を押すか Escape でも閉じられます。")
+        } actions: {
+            Button("閉じる") { lightOpen = false }.buttonStyle(.stemcell(.text))
+        }
+        .stemcellDialog(isPresented: $explicitOpen, dismiss: .explicit) {
+            Text("本当に消しますか")
+        } content: {
+            Text("消したものは戻せません。背後を押しても Escape を押しても閉じません。")
+        } actions: {
+            Button("やめる") { explicitOpen = false }.buttonStyle(.stemcell(.text))
+            Button("消す") { explicitOpen = false }.buttonStyle(.stemcell(.filled, color: .danger))
+        }
     }
 }
 
