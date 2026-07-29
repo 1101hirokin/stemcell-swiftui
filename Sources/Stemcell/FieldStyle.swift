@@ -48,9 +48,9 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
             // 床は幅にも要る。Button は minWidth も持っているのに、ここは高さだけだった。
             .frame(minWidth: 44, minHeight: 44) // size.md §4。トークンが無い。HOLES #4
             .background(surface)
-            .clipShape(RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control, style: .continuous))
+            .clipShape(SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control))
             .overlay {
-                RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control, style: .continuous)
+                SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control)
                     .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
             }
             // 使えないものは相互作用の状態を出さない（state.md §3.2）。

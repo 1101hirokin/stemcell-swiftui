@@ -15,10 +15,17 @@ import SwiftUI
     #expect(StemcellTextRole.allCases.filter(\.isMonospaced).count == 2)
 }
 
-@Test func 行のあいだは行の高さから字の大きさを引いた分() {
+@Test func 行の箱は契約の比で決まる() {
     let role = StemcellTextRole.bodyMd
-    #expect(role.lineSpacing == role.metrics.size * (role.metrics.lineHeight - 1))
-    #expect(role.lineSpacing > 0)
+    #expect(role.lineBox == role.metrics.size * role.metrics.lineHeight)
+}
+
+@Test func 自然な行高は契約の箱より低い() {
+    // CSS の line-height は一行でも行 box を決めるが、SwiftUI の lineSpacing は
+    // 行と行のあいだにしか効かない。差を埋める要があることを、ここで固定する。
+    for role in StemcellTextRole.allCases {
+        #expect(role.naturalLineHeight < role.lineBox, "\(role.rawValue)")
+    }
 }
 
 @Test func 太さは数から段へ写る() {

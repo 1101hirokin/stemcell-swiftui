@@ -85,10 +85,10 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
     @ViewBuilder
     private func mark(on: Bool) -> some View {
         let filled = on || indeterminate
-        RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection, style: .continuous)
+        SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection)
             .fill(filled ? markFill : Color.clear)
             .overlay {
-                RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection, style: .continuous)
+                SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection)
                     .strokeBorder(
                         filled ? markFill : (isEnabled ? theme.colors.border : DisabledColors.border).resolved,
                         lineWidth: StemcellTokens.Shape.borderWidth
