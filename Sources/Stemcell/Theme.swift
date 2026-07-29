@@ -13,8 +13,14 @@ public struct StemcellColors: Sendable, Hashable {
     public var fgMuted: DynamicColor
     public var primaryBackground: DynamicColor
     public var primaryForeground: DynamicColor
+    /// modal と notification の面（elevation.md §5 の表）。surface とは別の段である。
+    /// 明るいテーマでは surface と同値になるので、暗いテーマでしか差が出ない。
+    public var overlay: DynamicColor
     /// modal の背後に敷く veil（elevation.md §6）。半透明で持つ。
     public var scrim: DynamicColor
+    /// 影の二層（elevation.md §4）。不透明度はトークンが持つ。
+    public var shadowUmbra: DynamicColor
+    public var shadowPenumbra: DynamicColor
 
     public init(
         background: DynamicColor,
@@ -24,7 +30,10 @@ public struct StemcellColors: Sendable, Hashable {
         fgMuted: DynamicColor,
         primaryBackground: DynamicColor,
         primaryForeground: DynamicColor,
-        scrim: DynamicColor
+        overlay: DynamicColor,
+        scrim: DynamicColor,
+        shadowUmbra: DynamicColor,
+        shadowPenumbra: DynamicColor
     ) {
         self.background = background
         self.foreground = foreground
@@ -33,7 +42,10 @@ public struct StemcellColors: Sendable, Hashable {
         self.fgMuted = fgMuted
         self.primaryBackground = primaryBackground
         self.primaryForeground = primaryForeground
+        self.overlay = overlay
         self.scrim = scrim
+        self.shadowUmbra = shadowUmbra
+        self.shadowPenumbra = shadowPenumbra
     }
 }
 
@@ -84,6 +96,10 @@ extension StemcellTheme {
                 light: StemcellThemeStandardLight.Color.Semantic.Primary.fg,
                 dark: StemcellThemeStandardDark.Color.Semantic.Primary.fg
             ),
+            overlay: .init(
+                light: StemcellThemeStandardLight.Color.App.overlay,
+                dark: StemcellThemeStandardDark.Color.App.overlay
+            ),
             // トークンの `scrim` は veil で、本来 0.4 の不透明度を持つ。いま引いている
             // 0.0.0-alpha.16 の Swift 出力はそれを落としていて不透明のまま出る。
             // 直しは stemcell-tokens の PR #24 にあるが、版がまだ切られていない。
@@ -92,6 +108,16 @@ extension StemcellTheme {
             scrim: .init(
                 light: StemcellThemeStandardLight.scrim.opacity(0.4),
                 dark: StemcellThemeStandardDark.scrim.opacity(0.4)
+            ),
+            // 影の不透明度も同じ理由で落ちている。alpha.16 は 1.0 で出す。
+            // 値は elevation.md §4 の seed（light 24% と 14%、dark 30% と 18%）。
+            shadowUmbra: .init(
+                light: StemcellThemeStandardLight.Color.App.shadowUmbra.opacity(0.24),
+                dark: StemcellThemeStandardDark.Color.App.shadowUmbra.opacity(0.30)
+            ),
+            shadowPenumbra: .init(
+                light: StemcellThemeStandardLight.Color.App.shadowPenumbra.opacity(0.14),
+                dark: StemcellThemeStandardDark.Color.App.shadowPenumbra.opacity(0.18)
             )
         )
     )
