@@ -82,7 +82,7 @@ extension ButtonStyle where Self == StemcellButtonStyle {
         _ variant: StemcellVariant = .text,
         color intent: StemcellIntent = .plain,
         size: StemcellSize = .md,
-        shape: StemcellIconButtonShape = .control
+        shape: IconButtonShape = .control
     ) -> StemcellButtonStyle {
         StemcellButtonStyle(
             variant: variant, intent: intent, size: size,
@@ -92,7 +92,7 @@ extension ButtonStyle where Self == StemcellButtonStyle {
 }
 
 /// 絵だけのボタンの角（IconButton の `shape`）。
-public enum StemcellIconButtonShape: String, Sendable, CaseIterable {
+public enum IconButtonShape: String, Sendable, CaseIterable {
     case control, pill
 
     var corner: CGFloat {

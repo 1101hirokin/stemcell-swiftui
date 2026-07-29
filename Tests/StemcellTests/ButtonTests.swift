@@ -18,7 +18,7 @@ import SwiftUI
 }
 
 @Test func 絵だけのボタンの角は二つから選ぶ() {
-    #expect(StemcellIconButtonShape.control.corner != StemcellIconButtonShape.pill.corner)
+    #expect(IconButtonShape.control.corner != IconButtonShape.pill.corner)
 }
 
 @Test func intentごとに面と文字の色が違う() {

@@ -215,3 +215,32 @@ v0 の外に置く。
 - 適合の生成器を Swift で書くか、Bun で書いて Swift を吐くか。svelte と同じ道具を使えるのは後者だが、
   Swift だけで閉じるのは前者である
 - `Chart` は Apple の Swift Charts と名前が衝突する。図に着手するときに解く
+
+---
+
+## 12. 修飾子の名前（裁定 2026-07-29）
+
+`View` の拡張は大域に効くので、名前をどう付けるかを場当たりで決めない。二種類に分ける。
+
+| 種類 | 名前 | 例 |
+|---|---|---|
+| 文脈を配る | 接頭辞を持つ | `.stemcellTheme(_:)`、`.stemcellDensity(_:)` |
+| 姿を当てる | native の形に寄せる | `.textStyle(_:)` |
+
+分ける理由は、書く頻度と占める名前の重さが違うことである。文脈を配るのはアプリの根で
+一度きりで、stemcell 固有の設定でもあるから、長くても構わないし固有であるべきである。
+姿を当てるのは消費者が絶えず書くもので、観念自体は普遍だから、SwiftUI が付けたであろう
+名前に寄せる。
+
+SwiftUI が口を持っているものは、そもそも新しい修飾子を作らない。`Button` は
+`.buttonStyle(.stemcell(...))` で、様式の値の側に `stemcell` が付く。`Font` や
+`ButtonStyle` のような値の型が名前空間を担うのが SwiftUI の形であり、修飾子の名前は
+名前空間を担っていない。
+
+契約の prop も、SwiftUI に口があるものは引数にしない。`Button` の `disabled` は
+`.disabled()`、`Text` の `truncate` は `.lineLimit(1)`、`muted` は
+`.foregroundStyle(.stemcellMuted)` である。二つの道を作ると真実が二つになる（第2条）。
+
+型の名前は二つに分ける。部品をまたぐ語彙（`StemcellIntent` / `StemcellVariant` /
+`StemcellSize` / `StemcellTextRole`）は接頭辞を持ち、部品固有の語彙
+（`StackDirection` / `StackAlign` / `IconButtonShape`）は部品の名前で呼ぶ。
