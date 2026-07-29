@@ -6,6 +6,29 @@ public enum StemcellIntent: String, Sendable, CaseIterable {
     case primary, danger, warning, plain
 }
 
+/// 使えないときの差し替え先（state.md §7）。
+///
+/// disabled は intent の差し替えであって減衰ではない。薄めるだけだと danger の赤が
+/// 薄い赤のまま残り、「使えない」ではなく「危ないが薄い」に読める。hover と pressed を
+/// 持たないのは、使えないものが押されたときの姿を持たないためである。
+enum DisabledColors {
+    static let bg = DynamicColor(
+        light: StemcellThemeStandardLight.Color.Semantic.Disabled.bg,
+        dark: StemcellThemeStandardDark.Color.Semantic.Disabled.bg)
+    static let fg = DynamicColor(
+        light: StemcellThemeStandardLight.Color.Semantic.Disabled.fg,
+        dark: StemcellThemeStandardDark.Color.Semantic.Disabled.fg)
+    static let border = DynamicColor(
+        light: StemcellThemeStandardLight.Color.Semantic.Disabled.border,
+        dark: StemcellThemeStandardDark.Color.Semantic.Disabled.border)
+    static let softBg = DynamicColor(
+        light: StemcellThemeStandardLight.Color.Semantic.Disabled.softBg,
+        dark: StemcellThemeStandardDark.Color.Semantic.Disabled.softBg)
+    static let softFg = DynamicColor(
+        light: StemcellThemeStandardLight.Color.Semantic.Disabled.softFg,
+        dark: StemcellThemeStandardDark.Color.Semantic.Disabled.softFg)
+}
+
 /// 一つの intent が持つ役割一式。明暗の対で持つ。
 struct IntentColors {
     let bg, fg, border, bgHover, bgPressed: DynamicColor

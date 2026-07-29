@@ -74,6 +74,21 @@ struct Gallery: View {
                         }
                     }
 
+                    Row("欄と値") {
+                        Stack(gap: "sm") {
+                            TextField("メール", text: .constant(""))
+                                .fieldStyle()
+                            TextField("不正な値", text: .constant("x"))
+                                .fieldStyle(invalid: true)
+                            Toggle("入り切り", isOn: .constant(true))
+                                .toggleStyle(.stemcellSwitch)
+                            Toggle("四角い印", isOn: .constant(true))
+                                .toggleStyle(.stemcellCheckbox)
+                            Toggle("第三の値", isOn: .constant(false))
+                                .toggleStyle(.stemcellCheckbox(indeterminate: true, mixedValueLabel: "どちらでもない"))
+                        }
+                    }
+
                     Row("交差軸の揃え") {
                         Stack(gap: "sm") {
                             ForEach(["stretch", "start", "center", "end"], id: \.self) { name in
