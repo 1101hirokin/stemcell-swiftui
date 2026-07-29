@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 // stemcell の SwiftUI 実装。規範は stemcell-component-prompts が持つ。
