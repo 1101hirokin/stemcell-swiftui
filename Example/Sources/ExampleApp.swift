@@ -74,6 +74,17 @@ struct Gallery: View {
                         }
                     }
 
+                    // 字の役と行間。Dynamic Type を動かして、字と行のあいだが同じ比で
+                    // 伸びるかを見る場所である。一行では行間が見えないので折り返させる。
+                    Row("字の役") {
+                        Stack(gap: "sm", align: .start) {
+                            ForEach(StemcellTextRole.allCases, id: \.self) { role in
+                                Text("\(role.rawValue) 行のあいだを見るために折り返させる長さの文をここに置いている")
+                                    .textStyle(role)
+                            }
+                        }
+                    }
+
                     Row("欄と値") {
                         Stack(gap: "sm") {
                             Field("メール", description: "会社のものを入れる", required: true) {
