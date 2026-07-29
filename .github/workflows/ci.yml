@@ -1,0 +1,20 @@
+name: CI
+
+# SwiftUI は Apple のプラットフォームでしか動かない。作業機（Linux）ではコンパイルできないので、
+# ここが唯一の検証の場である（DESIGN.md §7）。押したら結果を読む。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode の版を出す
+        run: swift --version && xcodebuild -version
+      - name: ビルド
+        run: swift build -v
+      - name: 試験
+        run: swift test
