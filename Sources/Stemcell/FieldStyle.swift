@@ -21,6 +21,10 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
         HStack(spacing: StemcellTokens.Spacing.Inline.md) {
             start
             content
+                // 値の場所を先に譲らない。前後のものは装飾で、中身は値である。
+                // 優先の指定が無いと、狭いときに潰れるべきでない中身が先に消え、
+                // 固定寸法のアイコンが満寸のまま親をはみ出した（実測で 14pt）。
+                .layoutPriority(1)
                 .textFieldStyle(.plain)
                 // 読むだけは打てない。ARIA は readonly を「編集はできないが、それ以外は
                 // 操作できる」と定め、Web は HTML の readonly 属性がそのまま持っている。

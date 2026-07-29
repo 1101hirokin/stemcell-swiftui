@@ -10,7 +10,12 @@ public struct StemcellSwitchToggleStyle: ToggleStyle {
     @Environment(\.stemcellTheme) private var theme
 
     public func makeBody(configuration: Configuration) -> some View {
-        Toggle(isOn: configuration.$isOn) { configuration.label }
+        Toggle(isOn: configuration.$isOn) {
+            // native の版は狭いと札が一気に消える。折り返さず省略へ倒す。
+            configuration.label
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
             .toggleStyle(.switch)
             .tint(theme.colors.primaryBackground.resolved)
     }
@@ -35,8 +40,15 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
         } label: {
             HStack(spacing: StemcellTokens.Spacing.Inline.sm) {
                 mark(on: configuration.isOn)
+                // 札は折り返さない。狭いときに一文字ずつ縦へ伸びていた（実測で 12 行）。
                 configuration.label
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
+            // 当たり判定の床は Button と同じ形で置く。ここにだけ無かった。
+            // 印は 16pt しかないので、札が短いと押せる範囲が 24pt ほどしか無かった。
+            .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // 役は checkbox である（契約）。guidelines/accessibility.md の写像表は
