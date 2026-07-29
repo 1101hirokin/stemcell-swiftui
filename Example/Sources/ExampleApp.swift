@@ -113,6 +113,20 @@ struct Gallery: View {
                             }
                         }
                     }
+
+                    // stack 方向も同じ形で見る。こちらの交差軸は横で、第3条が名指す
+                    // 「横いっぱいに広がろうとする」の直接の相手である。
+                    Row("交差軸の揃え（stack）") {
+                        Stack(gap: "sm") {
+                            ForEach(StackAlign.allCases, id: \.self) { a in
+                                Stack(gap: "sm", align: a) {
+                                    Color.orange.opacity(0.35).frame(height: 14)
+                                    Text("\(a.rawValue) / 受けない子")
+                                        .background(Color.green.opacity(0.2))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
