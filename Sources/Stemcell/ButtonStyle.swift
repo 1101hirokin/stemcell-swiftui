@@ -61,13 +61,17 @@ extension StemcellButtonStyle {
                 .truncationMode(.tail)
                 .padding(.vertical, size.inset)
                 .padding(.horizontal, size.inset * 2)
+                // 枠の太さぶんを箱へ足す。Web は border: 1px solid transparent を全段に
+                // 置いていて、outlined と filled で箱が揃うようにしている。SwiftUI の
+                // strokeBorder は重ねなので箱を増やさず、そのぶん低くなっていた（実測 2pt）。
+                .padding(StemcellTokens.Shape.borderWidth)
                 .frame(maxWidth: style.fullWidth ? .infinity : nil)
                 .foregroundStyle(foreground(c, variant: variant).resolved)
                 .background(surface(c, variant: variant, pressed: pressed))
-                .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+                .clipShape(SuperellipseRoundedRectangle(cornerRadius: corner))
                 .overlay {
                     if variant == .outlined {
-                        RoundedRectangle(cornerRadius: corner, style: .continuous)
+                        SuperellipseRoundedRectangle(cornerRadius: corner)
                             .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
                     }
                 }

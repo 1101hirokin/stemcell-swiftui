@@ -1,5 +1,10 @@
 import SwiftUI
 import StemcellTokens
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// 字の役（typography.md §4）。契約の `Text.variant` がこれを選ぶ。
 ///
@@ -83,41 +88,51 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
         )
     }
 
-    /// 行の高さは比で持つが、SwiftUI の lineSpacing は行と行の「あいだ」である。差し引いて渡す。
-    /// 大きさが伸びれば、あいだも同じ比で伸びる要がある。
-    func lineSpacing(size: CGFloat) -> CGFloat {
-        size * (metrics.lineHeight - 1)
+    /// 契約が定める行 box の高さ。
+    var lineBox: CGFloat {
+        metrics.size * metrics.lineHeight
     }
 
-    /// Dynamic Type の伸び方をどの native の役に合わせるか。
-    ///
-    /// `@ScaledMetric` は基準の値をこの役の伸び率で掛ける。基準はトークンのままなので、
-    /// ここが決めるのは大きさではなく伸びの速さだけである。native の役は大きいものほど
-    /// 緩く伸びる。実測で `largeTitle` に合わせた役が 1.68 倍、`caption2` に合わせた役が
-    /// 3.63 倍だった（iPad Pro 13、標準から accessibility-extra-extra-extra-large）。
-    ///
-    /// 選び方は、トークンの大きさに一番近い native の役へ合わせる、という一つの規則で通す。
-    /// 前の版は役の意図（display / headline / title …）で選んでいたが、それだとトークンで
-    /// 大きさが同じ役に別の伸び率が付く。`headlineMd` と `titleLg` はどちらも 21pt なのに
-    /// 最大設定で 2.33 倍と 2.04 倍に割れていた。トークンに無い階層を Dynamic Type が
-    /// 作り出していたことになる。大きさが同じなら伸び方も同じにする。
-    ///
-    /// 同じ距離に二つ並ぶとき（14pt に対する `footnote` 13pt と `subheadline` 15pt）は
-    /// 大きいほうを採る。緩く伸びるほうで、版面が壊れにくい。
-    var scaleAnchor: Font.TextStyle {
-        switch metrics.size {
-        case 42: return .largeTitle   // native 34
-        case 28: return .title        // native 28
-        case 21: return .title2       // native 22
-        case 16.8: return .body       // native 17
-        case 14: return .subheadline  // native 15
-        case 12: return .caption      // native 12
-        default: return .caption2     // 10.5 に対する native 11
-        }
+    /// その土地が字に与える自然な行高。ここは契約が持たず、書体が持つ。
+    var naturalLineHeight: CGFloat {
+        let w = Font.Weight(stemcellWeight: metrics.weight)
+        #if canImport(UIKit)
+        let f = isMonospaced
+            ? UIFont.monospacedSystemFont(ofSize: metrics.size, weight: w.uiKit)
+            : UIFont.systemFont(ofSize: metrics.size, weight: w.uiKit)
+        return f.lineHeight
+        #elseif canImport(AppKit)
+        let f = isMonospaced
+            ? NSFont.monospacedSystemFont(ofSize: metrics.size, weight: w.appKit)
+            : NSFont.systemFont(ofSize: metrics.size, weight: w.appKit)
+        return NSLayoutManager().defaultLineHeight(for: f)
+        #else
+        return metrics.size * 1.2
+        #endif
     }
 }
 
 extension Font.Weight {
+    #if canImport(UIKit)
+    var uiKit: UIFont.Weight {
+        switch self {
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        default: return .regular
+        }
+    }
+    #elseif canImport(AppKit)
+    var appKit: NSFont.Weight {
+        switch self {
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        default: return .regular
+        }
+    }
+    #endif
+
     init(stemcellWeight raw: CGFloat) {
         switch raw {
         case ..<450: self = .regular
@@ -154,9 +169,20 @@ struct StemcellTextModifier: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        // 契約の行の高さは行 box の高さである（typography.md §3.2 の固定比 1.334）。
+        // CSS の line-height は一行でも行 box を決めるが、SwiftUI の lineSpacing は
+        // 行と行のあいだにしか効かない。一行の Text はその土地の自然な行高のままになる。
+        //
+        // Web と並べて見つけた。md のボタンで、字の箱が 16.0pt しか無く
+        // 14 × 1.334 = 18.68 になっていなかった。
+        //
+        // 足りないぶんを、行のあいだと上下の余白へ分けて配る。あいだへ入れると
+        // 二行目以降が、余白へ入れると一行目と最終行が、それぞれ正しい高さになる。
+        let extra = max(0, role.lineBox - role.naturalLineHeight)
         content
-            .font(role.font(size: size))
-            .lineSpacing(role.lineSpacing(size: size))
+            .font(role.font)
+            .lineSpacing(extra)
+            .padding(.vertical, extra / 2)
     }
 }
 
