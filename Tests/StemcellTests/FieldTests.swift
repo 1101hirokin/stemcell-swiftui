@@ -8,8 +8,8 @@ import StemcellTokens
 }
 
 @Test func 不正のときは枠がdangerの役へ差し替わる() {
-    let normal = StemcellFieldStyle(size: .md, invalid: false)
-    let bad = StemcellFieldStyle(size: .md, invalid: true)
+    let normal = StemcellFieldStyle(size: .md, invalid: false, readOnly: false, start: EmptyView(), end: EmptyView())
+    let bad = StemcellFieldStyle(size: .md, invalid: true, readOnly: false, start: EmptyView(), end: EmptyView())
     #expect(normal.size == bad.size)
     #expect(bad.invalid)
 }
@@ -19,4 +19,17 @@ import StemcellTokens
     let mixed = StemcellCheckboxToggleStyle(indeterminate: true)
     #expect(!plain.indeterminate)
     #expect(mixed.indeterminate)
+}
+
+@Test func 必須の印は名前のうしろに付く() {
+    // 型が組み上がることだけを見る。見え方は実機で見る。
+    _ = Field("メール", required: true) { EmptyView() }
+    _ = Field("メール", description: "説明", error: "エラー") { EmptyView() }
+}
+
+@Test func 読むだけと使えないことは別である() {
+    let readOnly = StemcellFieldStyle(size: .md, invalid: false, readOnly: true, start: EmptyView(), end: EmptyView())
+    let normal = StemcellFieldStyle(size: .md, invalid: false, readOnly: false, start: EmptyView(), end: EmptyView())
+    #expect(readOnly.readOnly)
+    #expect(!normal.readOnly)
 }

@@ -76,10 +76,18 @@ struct Gallery: View {
 
                     Row("欄と値") {
                         Stack(gap: "sm") {
-                            TextField("メール", text: .constant(""))
-                                .fieldStyle()
-                            TextField("不正な値", text: .constant("x"))
-                                .fieldStyle(invalid: true)
+                            Field("メール", description: "会社のものを入れる", required: true) {
+                                TextField("", text: .constant(""))
+                                    .fieldStyle()
+                            }
+                            Field("不正な値", error: "形式が違う") {
+                                TextField("", text: .constant("x"))
+                                    .fieldStyle(invalid: true)
+                            }
+                            Field("読むだけ") {
+                                TextField("", text: .constant("変えられない"))
+                                    .fieldStyle(readOnly: true)
+                            }
                             Toggle("入り切り", isOn: .constant(true))
                                 .toggleStyle(.stemcellSwitch)
                             Toggle("四角い印", isOn: .constant(true))
