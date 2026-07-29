@@ -14,92 +14,118 @@ public struct StemcellButtonStyle: ButtonStyle {
     /// 角の形。IconButton の `shape` がここへ来る。
     var corner: CGFloat
 
-    // 無効は契約の prop ではなく環境から来る。SwiftUI の .disabled() が正であり、
-    // 部品が別の道を作ると二つの真実ができる（第2条: native の機構で満たす）。
-    @Environment(\.isEnabled) private var isEnabled
-
     public func makeBody(configuration: Configuration) -> some View {
-        let c = intent.colors
-        let pressed = configuration.isPressed
+        Surface(configuration: configuration, style: self)
+    }
+}
 
-        configuration.label
-            // 字の役は label-lg である（contracts/Button/contract.json の tokensRequired が
-            // typography.label-lg を挙げている）。段では変えない。Web も全段で当てている。
-            // 前の版は役を一つも当てておらず、周囲の既定（.body の 17pt）で組んでいた。
-            .textStyle(.labelLg)
-            // 折り返さない。入りきらないときは省略記号で切る。
-            //
-            // 主要 DS を一次資料で当たると、一行に保つ側が多数である（Material 3 の実装、
-            // UIKit の古典、shadcn/ui、Primer、Ant Design、Atlaskit）。そのうち省略を選ぶのが
-            // Material 3 と UIKit の古典と Atlaskit で、はみ出す側の三つは意図して選んだと
-            // いうより対策していないだけに見える。
-            //
-            // SwiftUI の既定は lineLimit が nil で折り返すが、それは Apple の作法ではない。
-            // UILabel の既定は numberOfLines 1 の byTruncatingTail で、Apple の中でも割れている。
-            //
-            // 折り返しを許さないのは、どこで折るかが言語依存になり、CJK と欧文で意味が変わる
-            // からである。三つの土地で一意に実装できなくなる。
-            //
-            // 実害も見た。横の余白が md で左右 48pt を無条件に食うので、親がそれを下回ると
-            // 字の有効幅が 0 になり、文字が一つも描かれないまま高さだけが 153.5pt まで伸びた。
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .padding(.vertical, size.inset)
-            .padding(.horizontal, size.inset * 2)
-            .frame(maxWidth: fullWidth ? .infinity : nil)
-            .foregroundStyle(foreground(c).resolved)
-            .background(background(c, pressed: pressed))
-            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-            .overlay {
-                if variant == .outlined {
-                    RoundedRectangle(cornerRadius: corner, style: .continuous)
-                        .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
+extension StemcellButtonStyle {
+    /// 状態を持つので View に分ける。`ButtonStyle` は struct なので `@State` を置けない。
+    fileprivate struct Surface: View {
+        let configuration: Configuration
+        let style: StemcellButtonStyle
+
+        // 無効は契約の prop ではなく環境から来る。SwiftUI の .disabled() が正であり、
+        // 部品が別の道を作ると二つの真実ができる（第2条: native の機構で満たす）。
+        @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @State private var hovering = false
+
+        var body: some View {
+            let variant = style.variant
+            let size = style.size
+            let corner = style.corner
+            let c = style.intent.colors
+            let pressed = configuration.isPressed
+
+            configuration.label
+                // 字の役は label-lg である（contracts/Button/contract.json の
+                // tokensRequired が typography.label-lg を挙げている）。段では変えない。
+                // Web も全段で label-lg を当てている。
+                //
+                // 前の版は役を一つも当てておらず、周囲の既定（.body の 17pt）で組んでいた。
+                // Web と並べて高さが違うことから見つかった。lg で 52.5pt と 50.68px に割れる。
+                .textStyle(.labelLg)
+                // 折り返さない。入りきらないときは省略記号で切る。
+                // 主要 DS を一次資料で当たると、一行に保つ側が多数で、そのうち省略を選ぶのが
+                // Material 3 の実装と UIKit の古典と Atlaskit である。SwiftUI の既定は
+                // lineLimit が nil で折り返すが、それは Apple の作法ではない。UILabel の既定は
+                // numberOfLines 1 の byTruncatingTail で、Apple の中でも割れている。
+                //
+                // 折り返しを許さないのは、どこで折るかが言語依存になり、CJK と欧文で意味が
+                // 変わるからである。三つの土地で一意に実装できなくなる。
+                //
+                // 実害も見た。横の余白が md で左右 48pt を無条件に食うので、親がそれを下回ると
+                // 字の有効幅が 0 になり、文字が一つも描かれないまま高さだけが伸びていた。
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.vertical, size.inset)
+                .padding(.horizontal, size.inset * 2)
+                .frame(maxWidth: style.fullWidth ? .infinity : nil)
+                .foregroundStyle(foreground(c, variant: variant).resolved)
+                .background(surface(c, variant: variant, pressed: pressed))
+                .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+                .overlay {
+                    if variant == .outlined {
+                        RoundedRectangle(cornerRadius: corner, style: .continuous)
+                            .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
+                    }
                 }
-            }
-            // ここから下は当たり判定の話で、姿の話ではない。
-            //
-            // size.rules.json は minimumTargetSize を appliesTo: hit-region と定め、
-            // 「見た目の大きさではなく押せる範囲。したがって段と密度は見た目を詰めてよい」と
-            // 註釈している。だから枠は面より外に置く。前の版は面より前に置いていて、
-            // sm の段が 36.5pt から 44.0pt へ膨らみ、段を一つ潰していた。
-            //
-            // contentShape が要るのは、面を持たない強調度（outlined と text）が透明な地を
-            // 持つからである。SwiftUI は透明な画素を押せる範囲に数えないので、字の上でしか
-            // 反応しなかった。実機で見つかった。
-            //
-            // 床の値をトークンから引けないのは size.md §7 が未確定にしているためで、HOLES #4。
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-    }
+                // 使えないものは相互作用の状態を出さない（state.md §3.2）。
+                // ここは論理的必然ではなく規範で、実装が明示的に満たす要がある。
+                .onHover { hovering = isEnabled && $0 }
+                .animation(transition, value: hovering)
+                .animation(transition, value: pressed)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
 
-    private func foreground(_ c: IntentColors) -> DynamicColor {
-        // 使えないときは intent ごと差し替える（state.md §7）。薄めない。
-        guard isEnabled else { return variant == .filled ? DisabledColors.fg : DisabledColors.softFg }
-        return variant == .filled ? c.fg : c.softFg
-    }
+        /// 状態の移りは速い側の段を引く。動きを減らす設定のときは時間を持たない
+        /// （トークンが Motion.None を秒で出している）。
+        private var transition: Animation? {
+            let d = reduceMotion
+                ? StemcellTokens.Motion.None.duration
+                : StemcellTokens.Motion.Duration.fast02
+            return d == 0 ? nil : .easeOut(duration: d)
+        }
 
-    private var borderColor: Color {
-        isEnabled ? intent.colors.border.resolved : DisabledColors.border.resolved
-    }
+        private func foreground(_ c: IntentColors, variant: StemcellVariant) -> DynamicColor {
+            // 使えないときは intent ごと差し替える（state.md §7）。薄めない。
+            guard isEnabled else { return variant == .filled ? DisabledColors.fg : DisabledColors.softFg }
+            return variant == .filled ? c.fg : c.softFg
+        }
 
-    @ViewBuilder
-    private func background(_ c: IntentColors, pressed: Bool) -> some View {
-        if !isEnabled {
-            // 押された姿は持たない。使えないものは押せない。
-            switch variant {
-            case .filled: DisabledColors.bg.resolved
-            case .soft: DisabledColors.softBg.resolved
-            case .outlined, .text: Color.clear
-            }
-        } else {
-            switch variant {
-            case .filled:
-                (pressed ? c.bgPressed : c.bg).resolved
-            case .soft:
-                (pressed ? c.softBgPressed : c.softBg).resolved
-            case .outlined, .text:
-                // 面を持たない強調度は、押したときだけ面を得る（emphasis.md §4）。
-                pressed ? c.softBgPressed.resolved : Color.clear
+        private var borderColor: Color {
+            isEnabled ? style.intent.colors.border.resolved : DisabledColors.border.resolved
+        }
+
+        /// 面のチャンネル。pressed が hover に勝つ（state.md §3.3）。
+        /// 連続ホバーを持つ入力では押下が必ずホバーを含むので、より限定的なほうを採る。
+        @ViewBuilder
+        private func surface(_ c: IntentColors, variant: StemcellVariant, pressed: Bool) -> some View {
+            if !isEnabled {
+                // 押された姿も、ホバーの姿も持たない。使えないものは操作できない。
+                switch variant {
+                case .filled: DisabledColors.bg.resolved
+                case .soft: DisabledColors.softBg.resolved
+                case .outlined, .text: Color.clear
+                }
+            } else {
+                switch variant {
+                case .filled:
+                    (pressed ? c.bgPressed : hovering ? c.bgHover : c.bg).resolved
+                case .soft:
+                    (pressed ? c.softBgPressed : hovering ? c.softBgHover : c.softBg).resolved
+                case .outlined, .text:
+                    // 面を持たない強調度は、触れたときだけ面を得る（emphasis.md §4）。
+                    if pressed {
+                        c.softBgPressed.resolved
+                    } else if hovering {
+                        c.softBgHover.resolved
+                    } else {
+                        Color.clear
+                    }
+                }
             }
         }
     }

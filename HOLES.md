@@ -119,3 +119,42 @@ SwiftUI の Stack は交差軸の寸法を子へ提案し続けるので、提�
 
 伸びないことより縮まないことのほうが差として大きいと、自分は見ている。
 ここも #2 の二つ目の問いに帰着する。
+
+## #9 hover と押下の時間を持っていなかった
+
+`state.md` §3.3 は `hover` と `pressed` を面のチャンネルで解決し（`pressed > hover`）、
+`focus` を輪のチャンネルで解決すると定める。トークンも役ごとに `bgHover` と `softBgHover`
+を出していた。実装がどれも引いていなかった。
+
+`ButtonStyle` は struct なので `@State` を置けない。中を View に分けて `onHover` を受ける
+形にした。`Motion.Duration.fast02`（0.11 秒）で移す。動きを減らす設定のときは
+`Motion.None`（0 秒）を引いて時間を持たない。
+
+無効のときは相互作用の状態を出さない。§3.2 が「操作できないものにホバーの反応を返すことは
+ユーザーへの嘘であり、第1条がこれを禁じる」と定め、放っておいて成立する事実ではないので
+実装が明示的に満たす要がある、とまで書いている。
+
+## #11 焦点の輪を platform へ譲った
+
+`focus-ring.md` は自らを「ほぼ全て Normative であり、a11y の最低基準にあたる」と書き、
+幅 2px と隙間 2px と intent ごとの色を定めている。SwiftUI では描けなかった。
+
+`Button` の姿は `ButtonStyle` が持つ（DESIGN.md §2）。その中から焦点の有無を知る口が無い。
+`@Environment(\.isFocused)` を試したが、焦点が当たっていても false のままだった。
+`.focusable()` を足した場合も同じだった。macOS 26 で撮って確かめている。
+
+| 試したもの | native の輪 | 様式の中の isFocused |
+|---|---|---|
+| `Button` を `.focused($x)` で焦点へ | 出る | false |
+| 上に `.focusable()` を追加 | 出る | false |
+
+`FocusState` は View が持つもので、`ButtonStyle` は struct なので置けない。様式の外へ出す形
+（消費者が `.stemcellFocusRing($x)` を書く）と、`Button` を型で出す形も考えたが、前者は
+二つの道を作り、後者は §2 の判断そのものを覆す。
+
+platform の輪へ譲った。第2条の Ceded に Liquid Glass と同じ形で載る。譲る先は無償で正しく
+動き、システムのコントラスト設定やアクセントカラーにも追随する。捨てたのはトークンの色と
+幅と隙間で、Apple の土地では `color.semantic.<intent>.focus-ring` が使われなくなる。
+
+上流の裁定が要る。`focus-ring.md` は Ceded を想定していない。Normative のまま残すなら、
+SwiftUI がどう満たすのかを誰かが示す要がある。私は道を見つけられなかった。
