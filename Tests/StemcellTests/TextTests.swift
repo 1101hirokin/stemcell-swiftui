@@ -17,8 +17,22 @@ import SwiftUI
 
 @Test func 行のあいだは行の高さから字の大きさを引いた分() {
     let role = StemcellTextRole.bodyMd
-    #expect(role.lineSpacing == role.metrics.size * (role.metrics.lineHeight - 1))
-    #expect(role.lineSpacing > 0)
+    #expect(role.lineSpacing(size: role.metrics.size) == role.metrics.size * (role.metrics.lineHeight - 1))
+    #expect(role.lineSpacing(size: role.metrics.size) > 0)
+}
+
+@Test func 字が伸びれば行のあいだも同じ比で伸びる() {
+    let role = StemcellTextRole.bodyMd
+    let base = role.lineSpacing(size: role.metrics.size)
+    let doubled = role.lineSpacing(size: role.metrics.size * 2)
+    #expect(doubled == base * 2)
+}
+
+@Test func 伸びの速さは役ごとに違う相手へ合わせる() {
+    // 大きい役ほど緩く伸ばす。全部を body に合わせると階層が壊れる。
+    #expect(StemcellTextRole.displayLg.scaleAnchor == .largeTitle)
+    #expect(StemcellTextRole.bodyMd.scaleAnchor == .body)
+    #expect(StemcellTextRole.labelSm.scaleAnchor == .caption2)
 }
 
 @Test func 太さは数から段へ写る() {
