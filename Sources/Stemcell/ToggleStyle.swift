@@ -10,7 +10,12 @@ public struct StemcellSwitchToggleStyle: ToggleStyle {
     @Environment(\.stemcellTheme) private var theme
 
     public func makeBody(configuration: Configuration) -> some View {
-        Toggle(isOn: configuration.$isOn) { configuration.label }
+        Toggle(isOn: configuration.$isOn) {
+            // native の版は狭いと札が一気に消える。折り返さず省略へ倒す。
+            configuration.label
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
             .toggleStyle(.switch)
             .tint(theme.colors.primaryBackground.resolved)
     }
@@ -28,6 +33,8 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
 
     @Environment(\.stemcellTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
 
     public func makeBody(configuration: Configuration) -> some View {
         Button {
@@ -35,10 +42,21 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
         } label: {
             HStack(spacing: StemcellTokens.Spacing.Inline.sm) {
                 mark(on: configuration.isOn)
+                // 札は折り返さない。狭いときに一文字ずつ縦へ伸びていた（実測で 12 行）。
                 configuration.label
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
+            // 当たり判定の床は Button と同じ形で置く。ここにだけ無かった。
+            // 印は 16pt しかないので、札が短いと押せる範囲が 24pt ほどしか無かった。
+            .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // 使えないものは相互作用の状態を出さない（state.md §3.2）。
+        .onHover { hovering = isEnabled && $0 }
+        .animation(transition, value: hovering)
+        .animation(transition, value: configuration.isOn)
         // 役は checkbox である（契約）。guidelines/accessibility.md の写像表は
         // checkbox を .isToggle へ写すと定めている。radio の処方（.isButton + .isSelected）を
         // 当てると VoiceOver が「ボタン、選択済み」と読み、役が違って届く。
@@ -50,16 +68,27 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
 
     /// 使えないときは intent ごと差し替える（state.md §7）。
     private var markFill: Color {
-        (isEnabled ? theme.colors.primaryBackground : DisabledColors.bg).resolved
+        guard isEnabled else { return DisabledColors.bg.resolved }
+        // 面のチャンネル。触れているあいだは濃くする（state.md §3.3）。
+        return (hovering
+            ? StemcellIntent.primary.colors.bgHover
+            : theme.colors.primaryBackground).resolved
+    }
+
+    private var transition: Animation? {
+        let d = reduceMotion
+            ? StemcellTokens.Motion.None.duration
+            : StemcellTokens.Motion.Duration.fast02
+        return d == 0 ? nil : .easeOut(duration: d)
     }
 
     @ViewBuilder
     private func mark(on: Bool) -> some View {
         let filled = on || indeterminate
-        RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection, style: .continuous)
+        SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection)
             .fill(filled ? markFill : Color.clear)
             .overlay {
-                RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection, style: .continuous)
+                SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.selection)
                     .strokeBorder(
                         filled ? markFill : (isEnabled ? theme.colors.border : DisabledColors.border).resolved,
                         lineWidth: StemcellTokens.Shape.borderWidth

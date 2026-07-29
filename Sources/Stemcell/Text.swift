@@ -1,5 +1,10 @@
 import SwiftUI
 import StemcellTokens
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// 字の役（typography.md §4）。契約の `Text.variant` がこれを選ぶ。
 ///
@@ -83,12 +88,6 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
         )
     }
 
-    /// 行の高さは比で持つが、SwiftUI の lineSpacing は行と行の「あいだ」である。差し引いて渡す。
-    /// 大きさが伸びれば、あいだも同じ比で伸びる要がある。
-    func lineSpacing(size: CGFloat) -> CGFloat {
-        size * (metrics.lineHeight - 1)
-    }
-
     /// Dynamic Type の伸び方をどの native の役に合わせるか。
     ///
     /// `@ScaledMetric` は基準の値をこの役の伸び率で掛ける。基準はトークンのままなので、
@@ -115,9 +114,52 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
         default: return .caption2     // 10.5 に対する native 11
         }
     }
+
+    /// 契約が定める行 box の高さ。大きさは呼ぶ側が決める（伸びた後の値が来る）。
+    func lineBox(size: CGFloat) -> CGFloat {
+        size * metrics.lineHeight
+    }
+
+    /// その土地が字に与える自然な行高。ここは契約が持たず、書体が持つ。
+    func naturalLineHeight(size: CGFloat) -> CGFloat {
+        let w = Font.Weight(stemcellWeight: metrics.weight)
+        #if canImport(UIKit)
+        let f = isMonospaced
+            ? UIFont.monospacedSystemFont(ofSize: size, weight: w.uiKit)
+            : UIFont.systemFont(ofSize: size, weight: w.uiKit)
+        return f.lineHeight
+        #elseif canImport(AppKit)
+        let f = isMonospaced
+            ? NSFont.monospacedSystemFont(ofSize: size, weight: w.appKit)
+            : NSFont.systemFont(ofSize: size, weight: w.appKit)
+        return NSLayoutManager().defaultLineHeight(for: f)
+        #else
+        return size * 1.2
+        #endif
+    }
 }
 
 extension Font.Weight {
+    #if canImport(UIKit)
+    var uiKit: UIFont.Weight {
+        switch self {
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        default: return .regular
+        }
+    }
+    #elseif canImport(AppKit)
+    var appKit: NSFont.Weight {
+        switch self {
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        default: return .regular
+        }
+    }
+    #endif
+
     init(stemcellWeight raw: CGFloat) {
         switch raw {
         case ..<450: self = .regular
@@ -154,9 +196,21 @@ struct StemcellTextModifier: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        // 契約の行の高さは行 box の高さである（typography.md §3.2 の固定比 1.334）。
+        // CSS の line-height は一行でも行 box を決めるが、SwiftUI の lineSpacing は
+        // 行と行のあいだにしか効かない。一行の Text はその土地の自然な行高のままになる。
+        //
+        // Web と並べて見つけた。md のボタンで、字の箱が 16.0pt しか無く
+        // 14 × 1.334 = 18.68 になっていなかった。
+        //
+        // 足りないぶんを、行のあいだと上下の余白へ分けて配る。あいだへ入れると
+        // 二行目以降が、余白へ入れると一行目と最終行が、それぞれ正しい高さになる。
+        // 伸びた後の大きさから引く。契約の比は行 box にかかるので、字が伸びれば箱も伸びる。
+        let extra = max(0, role.lineBox(size: size) - role.naturalLineHeight(size: size))
         content
             .font(role.font(size: size))
-            .lineSpacing(role.lineSpacing(size: size))
+            .lineSpacing(extra)
+            .padding(.vertical, extra / 2)
     }
 }
 

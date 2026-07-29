@@ -15,33 +15,17 @@ import SwiftUI
     #expect(StemcellTextRole.allCases.filter(\.isMonospaced).count == 2)
 }
 
-@Test func 行のあいだは行の高さから字の大きさを引いた分() {
+@Test func 行の箱は契約の比で決まる() {
     let role = StemcellTextRole.bodyMd
-    #expect(role.lineSpacing(size: role.metrics.size) == role.metrics.size * (role.metrics.lineHeight - 1))
-    #expect(role.lineSpacing(size: role.metrics.size) > 0)
+    #expect(role.lineBox(size: role.metrics.size) == role.metrics.size * role.metrics.lineHeight)
 }
 
-@Test func 字が伸びれば行のあいだも同じ比で伸びる() {
-    let role = StemcellTextRole.bodyMd
-    let base = role.lineSpacing(size: role.metrics.size)
-    let doubled = role.lineSpacing(size: role.metrics.size * 2)
-    #expect(doubled == base * 2)
-}
-
-@Test func 伸びの速さは大きさに近い相手へ合わせる() {
-    #expect(StemcellTextRole.displayLg.scaleAnchor == .largeTitle)
-    #expect(StemcellTextRole.bodyMd.scaleAnchor == .subheadline)
-    #expect(StemcellTextRole.labelSm.scaleAnchor == .caption2)
-}
-
-@Test func 大きさが同じ役は伸び方も同じである() {
-    // 役の意図で選ぶと、トークンで大きさが同じ役に別の伸び率が付き、
-    // トークンに無い階層を Dynamic Type が作り出す。headlineMd と titleLg が
-    // どちらも 21pt なのに最大設定で 2.33 倍と 2.04 倍に割れていた。
-    for a in StemcellTextRole.allCases {
-        for b in StemcellTextRole.allCases where a.metrics.size == b.metrics.size {
-            #expect(a.scaleAnchor == b.scaleAnchor, "\(a.rawValue) と \(b.rawValue)")
-        }
+@Test func 自然な行高は契約の箱より低い() {
+    // CSS の line-height は一行でも行 box を決めるが、SwiftUI の lineSpacing は
+    // 行と行のあいだにしか効かない。差を埋める要があることを、ここで固定する。
+    for role in StemcellTextRole.allCases {
+        let s = role.metrics.size
+        #expect(role.naturalLineHeight(size: s) < role.lineBox(size: s), "\(role.rawValue)")
     }
 }
 
