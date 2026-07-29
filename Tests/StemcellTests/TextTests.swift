@@ -28,11 +28,21 @@ import SwiftUI
     #expect(doubled == base * 2)
 }
 
-@Test func 伸びの速さは役ごとに違う相手へ合わせる() {
-    // 大きい役ほど緩く伸ばす。全部を body に合わせると階層が壊れる。
+@Test func 伸びの速さは大きさに近い相手へ合わせる() {
     #expect(StemcellTextRole.displayLg.scaleAnchor == .largeTitle)
-    #expect(StemcellTextRole.bodyMd.scaleAnchor == .body)
+    #expect(StemcellTextRole.bodyMd.scaleAnchor == .subheadline)
     #expect(StemcellTextRole.labelSm.scaleAnchor == .caption2)
+}
+
+@Test func 大きさが同じ役は伸び方も同じである() {
+    // 役の意図で選ぶと、トークンで大きさが同じ役に別の伸び率が付き、
+    // トークンに無い階層を Dynamic Type が作り出す。headlineMd と titleLg が
+    // どちらも 21pt なのに最大設定で 2.33 倍と 2.04 倍に割れていた。
+    for a in StemcellTextRole.allCases {
+        for b in StemcellTextRole.allCases where a.metrics.size == b.metrics.size {
+            #expect(a.scaleAnchor == b.scaleAnchor, "\(a.rawValue) と \(b.rawValue)")
+        }
+    }
 }
 
 @Test func 太さは数から段へ写る() {

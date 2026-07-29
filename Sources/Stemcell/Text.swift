@@ -71,8 +71,8 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
     ///
     /// `Font.system(size:)` は固定の大きさであって、Dynamic Type では伸びない。
     /// 前の版はここに `metrics.size` を直に渡していて、字が伸びなかった。iPad Pro 13 で
-    /// 標準と accessibility-extra-extra-extra-large を撮り比べ、見出しの墨がどちらも
-    /// 11.0pt で同じであることを測って分かった。
+    /// 標準と accessibility-extra-extra-extra-large を撮り比べ、見出しの墨の外接箱が
+    /// どちらも 90.5 x 12.5pt で同じであることを測って分かった。
     ///
     /// 書体そのもの（CSS の font stack）はトークンから写せないので、その土地の既定に委ねる。
     func font(size: CGFloat) -> Font {
@@ -92,22 +92,27 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
     /// Dynamic Type の伸び方をどの native の役に合わせるか。
     ///
     /// `@ScaledMetric` は基準の値をこの役の伸び率で掛ける。基準はトークンのままなので、
-    /// ここが決めるのは大きさではなく伸びの速さだけである。iOS は大きい役ほど緩く伸ばして
-    /// 階層が壊れないようにしているので、役の意図に合わせて選ぶ。数の近さでは選ばない。
+    /// ここが決めるのは大きさではなく伸びの速さだけである。native の役は大きいものほど
+    /// 緩く伸びる。実測で `largeTitle` に合わせた役が 1.68 倍、`caption2` に合わせた役が
+    /// 3.63 倍だった（iPad Pro 13、標準から accessibility-extra-extra-extra-large）。
+    ///
+    /// 選び方は、トークンの大きさに一番近い native の役へ合わせる、という一つの規則で通す。
+    /// 前の版は役の意図（display / headline / title …）で選んでいたが、それだとトークンで
+    /// 大きさが同じ役に別の伸び率が付く。`headlineMd` と `titleLg` はどちらも 21pt なのに
+    /// 最大設定で 2.33 倍と 2.04 倍に割れていた。トークンに無い階層を Dynamic Type が
+    /// 作り出していたことになる。大きさが同じなら伸び方も同じにする。
+    ///
+    /// 同じ距離に二つ並ぶとき（14pt に対する `footnote` 13pt と `subheadline` 15pt）は
+    /// 大きいほうを採る。緩く伸びるほうで、版面が壊れにくい。
     var scaleAnchor: Font.TextStyle {
-        switch self {
-        case .displayLg, .displayMd: return .largeTitle
-        case .headlineLg: return .title
-        case .headlineMd: return .title2
-        case .headlineSm: return .title3
-        case .titleLg: return .title3
-        case .titleMd: return .headline
-        case .titleSm: return .subheadline
-        case .bodyLg, .bodyMd, .monoMd: return .body
-        case .bodySm, .monoSm: return .footnote
-        case .labelLg: return .footnote
-        case .labelMd: return .caption
-        case .labelSm: return .caption2
+        switch metrics.size {
+        case 42: return .largeTitle   // native 34
+        case 28: return .title        // native 28
+        case 21: return .title2       // native 22
+        case 16.8: return .body       // native 17
+        case 14: return .subheadline  // native 15
+        case 12: return .caption      // native 12
+        default: return .caption2     // 10.5 に対する native 11
         }
     }
 }
