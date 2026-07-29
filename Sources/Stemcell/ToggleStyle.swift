@@ -23,6 +23,8 @@ public struct StemcellSwitchToggleStyle: ToggleStyle {
 public struct StemcellCheckboxToggleStyle: ToggleStyle {
     /// 第三の値（`indeterminate`）。値であって状態ではない（state.md §6）。
     var indeterminate: Bool = false
+    /// 第三の値を支援技術へ言うときの言葉。DS は文言を持たない（i18n.md §1）。
+    var mixedValueLabel: String?
 
     @Environment(\.stemcellTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
@@ -37,21 +39,29 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
             }
         }
         .buttonStyle(.plain)
-        .opacity(isEnabled ? 1 : 0.5)
-        // 値が届くのは Normative。三値なので aria-checked の mixed にあたるものを持つ。
-        .accessibilityAddTraits(configuration.isOn ? .isSelected : [])
-        .accessibilityValue(indeterminate ? "混在" : (configuration.isOn ? "オン" : "オフ"))
+        // 役は checkbox である（契約）。guidelines/accessibility.md の写像表は
+        // checkbox を .isToggle へ写すと定めている。radio の処方（.isButton + .isSelected）を
+        // 当てると VoiceOver が「ボタン、選択済み」と読み、役が違って届く。
+        .accessibilityAddTraits(.isToggle)
+        // 値の言い回しは DS が持たない（i18n.md §1）。三値のときだけ、native が言えない
+        // 「どちらでもない」を消費者から受け取って添える。
+        .accessibilityValue(indeterminate ? (mixedValueLabel.map(Text.init) ?? Text(verbatim: "")) : Text(verbatim: ""))
+    }
+
+    /// 使えないときは intent ごと差し替える（state.md §7）。
+    private var markFill: Color {
+        (isEnabled ? theme.colors.primaryBackground : DisabledColors.bg).resolved
     }
 
     @ViewBuilder
     private func mark(on: Bool) -> some View {
         let filled = on || indeterminate
         RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.selection, style: .continuous)
-            .fill(filled ? theme.colors.primaryBackground.resolved : Color.clear)
+            .fill(filled ? markFill : Color.clear)
             .overlay {
                 RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.selection, style: .continuous)
                     .strokeBorder(
-                        filled ? theme.colors.primaryBackground.resolved : theme.colors.border.resolved,
+                        filled ? markFill : (isEnabled ? theme.colors.border : DisabledColors.border).resolved,
                         lineWidth: StemcellTokens.Shape.borderWidth
                     )
             }
@@ -74,8 +84,11 @@ extension ToggleStyle where Self == StemcellCheckboxToggleStyle {
     /// 四角い印（契約の `Checkbox`）。
     public static var stemcellCheckbox: StemcellCheckboxToggleStyle { .init() }
 
-    /// 第三の値を持つ印。
-    public static func stemcellCheckbox(indeterminate: Bool) -> StemcellCheckboxToggleStyle {
-        .init(indeterminate: indeterminate)
+    /// 第三の値を持つ印。言葉は消費者が渡す（i18n.md §1）。
+    public static func stemcellCheckbox(
+        indeterminate: Bool,
+        mixedValueLabel: String? = nil
+    ) -> StemcellCheckboxToggleStyle {
+        .init(indeterminate: indeterminate, mixedValueLabel: mixedValueLabel)
     }
 }

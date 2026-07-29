@@ -18,18 +18,19 @@ public struct StemcellFieldStyle: ViewModifier {
             .textFieldStyle(.plain)
             .padding(size.inset)
             .frame(minHeight: 44) // 当たり判定の床（size.md §4）。トークンが無い。HOLES #4
-            .background(theme.colors.surface.resolved)
+            .background((isEnabled ? theme.colors.surface : DisabledColors.softBg).resolved)
             .clipShape(RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.control, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.control, style: .continuous)
                     .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
             }
-            .opacity(isEnabled ? 1 : 0.5)
     }
 
     /// 不正は intent を danger へ差し替える（state.md §7）。判定はアプリが持つ。
     private var borderColor: Color {
-        invalid
+        // 使えないほうが強い。同じ面を争うので優先順位が要る（state.md §3）。
+        if !isEnabled { return DisabledColors.border.resolved }
+        return invalid
             ? StemcellIntent.danger.colors.border.resolved
             : theme.colors.border.resolved
     }

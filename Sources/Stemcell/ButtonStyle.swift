@@ -36,26 +36,40 @@ public struct StemcellButtonStyle: ButtonStyle {
             .overlay {
                 if variant == .outlined {
                     RoundedRectangle(cornerRadius: corner, style: .continuous)
-                        .strokeBorder(c.border.resolved, lineWidth: StemcellTokens.Shape.borderWidth)
+                        .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
                 }
             }
-            .opacity(isEnabled ? 1 : 0.5)
     }
 
     private func foreground(_ c: IntentColors) -> DynamicColor {
-        variant == .filled ? c.fg : c.softFg
+        // 使えないときは intent ごと差し替える（state.md §7）。薄めない。
+        guard isEnabled else { return variant == .filled ? DisabledColors.fg : DisabledColors.softFg }
+        return variant == .filled ? c.fg : c.softFg
+    }
+
+    private var borderColor: Color {
+        isEnabled ? intent.colors.border.resolved : DisabledColors.border.resolved
     }
 
     @ViewBuilder
     private func background(_ c: IntentColors, pressed: Bool) -> some View {
-        switch variant {
-        case .filled:
-            (pressed ? c.bgPressed : c.bg).resolved
-        case .soft:
-            (pressed ? c.softBgPressed : c.softBg).resolved
-        case .outlined, .text:
-            // 面を持たない強調度は、押したときだけ面を得る（emphasis.md §4）。
-            pressed ? c.softBgPressed.resolved : Color.clear
+        if !isEnabled {
+            // 押された姿は持たない。使えないものは押せない。
+            switch variant {
+            case .filled: DisabledColors.bg.resolved
+            case .soft: DisabledColors.softBg.resolved
+            case .outlined, .text: Color.clear
+            }
+        } else {
+            switch variant {
+            case .filled:
+                (pressed ? c.bgPressed : c.bg).resolved
+            case .soft:
+                (pressed ? c.softBgPressed : c.softBg).resolved
+            case .outlined, .text:
+                // 面を持たない強調度は、押したときだけ面を得る（emphasis.md §4）。
+                pressed ? c.softBgPressed.resolved : Color.clear
+            }
         }
     }
 }

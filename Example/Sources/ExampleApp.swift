@@ -85,7 +85,7 @@ struct Gallery: View {
                             Toggle("四角い印", isOn: .constant(true))
                                 .toggleStyle(.stemcellCheckbox)
                             Toggle("第三の値", isOn: .constant(false))
-                                .toggleStyle(.stemcellCheckbox(indeterminate: true))
+                                .toggleStyle(.stemcellCheckbox(indeterminate: true, mixedValueLabel: "どちらでもない"))
                         }
                     }
 
