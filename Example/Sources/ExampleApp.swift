@@ -97,11 +97,17 @@ struct Gallery: View {
                         }
                     }
 
-                    Row("交差軸の揃え") {
+                    // 交差軸の揃えは、提案を受ける子と受けない子で見え方が割れる。両方を並べる。
+                    // 橙は提案をそのまま受ける子（Color）、緑は自分の理想で止まる子（Text）である。
+                    // 背の高い子を混ぜて、行の交差軸をそこで決めさせている。
+                    Row("交差軸の揃え（inline）") {
                         Stack(gap: "sm") {
-                            ForEach(["stretch", "start", "center", "end"], id: \.self) { name in
-                                Stack(direction: .inline, gap: "sm", align: align(name)) {
-                                    Text(name)
+                            ForEach(StackAlign.allCases, id: \.self) { a in
+                                Stack(direction: .inline, gap: "sm", align: a) {
+                                    Text(a.rawValue).frame(width: 64, alignment: .leading)
+                                    Color.orange.opacity(0.35).frame(width: 40)
+                                    Text("受けない子").background(Color.green.opacity(0.2))
+                                    Text("背の高い子\n二行ある")
                                     Button("押す") { }.buttonStyle(.stemcell(.outlined, size: .sm))
                                 }
                             }
@@ -112,10 +118,6 @@ struct Gallery: View {
         }
         .background(theme.colors.background.resolved)
         .stemcellDensity(density)
-    }
-
-    private func align(_ name: String) -> StackAlign {
-        StackAlign(rawValue: name) ?? .stretch
     }
 }
 

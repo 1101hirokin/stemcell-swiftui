@@ -42,15 +42,25 @@ public struct Stack<Content: View>: View {
 
         switch direction {
         case .stack:
+            // 積みの箱は横いっぱいを取る。Web の Stack が block である（内容幅で止まらない）
+            // ことに対応する。中の揃えは alignment が持つ。
             VStack(alignment: horizontal, spacing: spacing) { content }
-                .frame(maxWidth: align == .stretch ? .infinity : nil, alignment: stretchAlignment)
+                .frame(maxWidth: align == .stretch ? .infinity : nil, alignment: .topLeading)
         case .inline:
+            // 交差軸（ここでは高さ）に枠を当てない。前の版は stretch のとき
+            // `.frame(maxHeight: .infinity)` を当てていたが、高さの決まらない場所
+            // （ScrollView の中）では行が無限を要求し、行同士が重なった。実機で見た。
             HStack(alignment: vertical, spacing: spacing) { content }
-                .frame(maxHeight: align == .stretch ? .infinity : nil, alignment: stretchAlignment)
         }
     }
 
-    /// 交差軸の揃え。stretch は SwiftUI の alignment に無いので、枠を広げる側で表す。
+    /// 交差軸の揃え。
+    ///
+    /// SwiftUI の Stack は、揃えが何であれ交差軸の寸法を子へ提案する。提案を受ける子
+    /// （`Color` や `TextField`）はそれで広がり、自分の理想で止まる子（`Text`）は止まる。
+    /// つまり stretch は「広げてよい」という提案でしかなく、Web の
+    /// `align-items: stretch`（子の箱そのものを広げる）とは効き方が違う。
+    /// start / center / end は、止まった子を置く位置としてだけ効く。HOLES #2 に記録した。
     private var horizontal: HorizontalAlignment {
         switch align {
         case .start: return .leading
@@ -67,9 +77,5 @@ public struct Stack<Content: View>: View {
         case .end: return .bottom
         case .stretch: return .top
         }
-    }
-
-    private var stretchAlignment: Alignment {
-        direction == .stack ? .topLeading : .topLeading
     }
 }
