@@ -22,6 +22,6 @@ import SwiftUI
 }
 
 @Test func 太さは数から段へ写る() {
-    #expect(Font.Weight(400) == .regular)
-    #expect(Font.Weight(600) == .semibold)
+    #expect(Font.Weight(stemcellWeight: 400) == .regular)
+    #expect(Font.Weight(stemcellWeight: 600) == .semibold)
 }
