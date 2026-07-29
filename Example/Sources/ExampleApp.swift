@@ -20,6 +20,14 @@ struct ExampleApp: App {
 struct Gallery: View {
     @Environment(\.stemcellTheme) private var theme
     @State private var density: StemcellDensity = .comfortable
+    // 束縛は値を持たせる。.constant() だと書いても入り切りしても戻ってしまい、
+    // 欄もつまみも触れないものになる（実機で気づいた）。
+    @State private var mail = ""
+    @State private var invalid = "x"
+    @State private var readOnly = "変えられない"
+    @State private var on = true
+    @State private var checked = true
+    @State private var mixed = false
 
     var body: some View {
         ScrollView {
@@ -88,22 +96,22 @@ struct Gallery: View {
                     Row("欄と値") {
                         Stack(gap: "sm") {
                             Field("メール", description: "会社のものを入れる", required: true) {
-                                TextField("", text: .constant(""))
+                                TextField("", text: $mail)
                                     .fieldStyle()
                             }
                             Field("不正な値", error: "形式が違う") {
-                                TextField("", text: .constant("x"))
+                                TextField("", text: $invalid)
                                     .fieldStyle(invalid: true)
                             }
                             Field("読むだけ") {
-                                TextField("", text: .constant("変えられない"))
+                                TextField("", text: $readOnly)
                                     .fieldStyle(readOnly: true)
                             }
-                            Toggle("入り切り", isOn: .constant(true))
+                            Toggle("入り切り", isOn: $on)
                                 .toggleStyle(.stemcellSwitch)
-                            Toggle("四角い印", isOn: .constant(true))
+                            Toggle("四角い印", isOn: $checked)
                                 .toggleStyle(.stemcellCheckbox)
-                            Toggle("第三の値", isOn: .constant(false))
+                            Toggle("第三の値", isOn: $mixed)
                                 .toggleStyle(.stemcellCheckbox(indeterminate: true, mixedValueLabel: "どちらでもない"))
                         }
                     }
