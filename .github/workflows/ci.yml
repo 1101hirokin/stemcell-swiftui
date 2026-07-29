@@ -12,8 +12,19 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Xcode の版を出す
-        run: swift --version && xcodebuild -version
+      - name: 載っている Xcode を出す
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          echo "--- いまの既定 ---"
+          xcodebuild -version
+          swift --version
+      - name: いちばん新しい Xcode を選ぶ
+        run: |
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "選ぶ: $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
+          swift --version
       - name: ビルド
         run: swift build -v
       - name: 試験
