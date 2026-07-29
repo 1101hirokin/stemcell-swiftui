@@ -10,6 +10,7 @@ public struct StemcellColors: Sendable, Hashable {
     public var foreground: DynamicColor
     public var surface: DynamicColor
     public var border: DynamicColor
+    public var fgMuted: DynamicColor
     public var primaryBackground: DynamicColor
     public var primaryForeground: DynamicColor
 
@@ -18,6 +19,7 @@ public struct StemcellColors: Sendable, Hashable {
         foreground: DynamicColor,
         surface: DynamicColor,
         border: DynamicColor,
+        fgMuted: DynamicColor,
         primaryBackground: DynamicColor,
         primaryForeground: DynamicColor
     ) {
@@ -25,6 +27,7 @@ public struct StemcellColors: Sendable, Hashable {
         self.foreground = foreground
         self.surface = surface
         self.border = border
+        self.fgMuted = fgMuted
         self.primaryBackground = primaryBackground
         self.primaryForeground = primaryForeground
     }
@@ -64,6 +67,10 @@ extension StemcellTheme {
             border: .init(
                 light: StemcellThemeStandardLight.Color.App.border,
                 dark: StemcellThemeStandardDark.Color.App.border
+            ),
+            fgMuted: .init(
+                light: StemcellThemeStandardLight.Color.App.fgMuted,
+                dark: StemcellThemeStandardDark.Color.App.fgMuted
             ),
             primaryBackground: .init(
                 light: StemcellThemeStandardLight.Color.Semantic.Primary.bg,
