@@ -66,7 +66,7 @@ struct Gallery: View {
 
                     Row("絵だけのボタン") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
-                            ForEach(StemcellIconButtonShape.allCases, id: \.self) { shape in
+                            ForEach(IconButtonShape.allCases, id: \.self) { shape in
                                 Button { } label: { Image(systemName: "xmark") }
                                     .buttonStyle(.stemcellIcon(.soft, shape: shape))
                                     .accessibilityLabel("閉じる")
@@ -108,7 +108,7 @@ struct Row<Content: View>: View {
 
     var body: some View {
         Stack(gap: "sm", align: .start) {
-            Text(title).font(.headline)
+            Text(title).textStyle(.titleSm)
             content
         }
     }

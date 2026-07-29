@@ -95,30 +95,36 @@ extension Font.Weight {
 }
 
 extension View {
-    /// 字の役を当てる。契約の Text はここへ写る。
-    public func stemcellText(
-        _ role: StemcellTextRole = .bodyMd,
-        muted: Bool = false,
-        truncate: Bool = false
-    ) -> some View {
-        modifier(StemcellTextModifier(role: role, muted: muted, truncate: truncate))
+    /// 字の役を当てる。契約の `Text.variant` はここへ写る。
+    ///
+    /// 名前に接頭辞を付けないのは、姿を当てる修飾子だからである。消費者が絶えず書くものは
+    /// native の形に寄せ、文脈を配るもの（`.stemcellTheme` / `.stemcellDensity`）だけが
+    /// 接頭辞を持つ（DESIGN.md §12）。
+    ///
+    /// 契約の `truncate` と `muted` は引数にしない。SwiftUI に口があるからである
+    /// （`.lineLimit(1)` と `.foregroundStyle(...)`）。二つの道を作ると真実が二つになる。
+    /// `Button` の `disabled` を `.disabled()` へ委ねたのと同じ判断である。
+    public func textStyle(_ role: StemcellTextRole = .bodyMd) -> some View {
+        modifier(StemcellTextModifier(role: role))
     }
 }
 
 struct StemcellTextModifier: ViewModifier {
     let role: StemcellTextRole
-    let muted: Bool
-    let truncate: Bool
-
-    @Environment(\.stemcellTheme) private var theme
 
     func body(content: Content) -> some View {
         content
             .font(role.font)
             .lineSpacing(role.lineSpacing)
-            .lineLimit(truncate ? 1 : nil)
-            .truncationMode(.tail)
-            // 既定は色を宣言せず周りを継ぐ（契約: muted の既定 false は色を宣言しない）。
-            .foregroundStyle(muted ? AnyShapeStyle(theme.colors.fgMuted.resolved) : AnyShapeStyle(.foreground))
+    }
+}
+
+extension ShapeStyle where Self == Color {
+    /// 副次の文字色（契約の `muted`）。`.foregroundStyle(.stemcellMuted)` で当てる。
+    public static var stemcellMuted: Color {
+        DynamicColor(
+            light: StemcellThemeStandardLight.Color.App.fgMuted,
+            dark: StemcellThemeStandardDark.Color.App.fgMuted
+        ).resolved
     }
 }
