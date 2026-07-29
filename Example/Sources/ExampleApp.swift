@@ -97,12 +97,32 @@ struct Gallery: View {
                         }
                     }
 
-                    Row("交差軸の揃え") {
+                    // 交差軸の揃えは、提案を受ける子と受けない子で見え方が割れる。両方を並べる。
+                    // 橙は提案をそのまま受ける子（Color）、緑は自分の理想で止まる子（Text）である。
+                    // 背の高い子を混ぜて、行の交差軸をそこで決めさせている。
+                    Row("交差軸の揃え（inline）") {
                         Stack(gap: "sm") {
-                            ForEach(["stretch", "start", "center", "end"], id: \.self) { name in
-                                Stack(direction: .inline, gap: "sm", align: align(name)) {
-                                    Text(name)
+                            ForEach(StackAlign.allCases, id: \.self) { a in
+                                Stack(direction: .inline, gap: "sm", align: a) {
+                                    Text(a.rawValue).frame(width: 64, alignment: .leading)
+                                    Color.orange.opacity(0.35).frame(width: 40)
+                                    Text("受けない子").background(Color.green.opacity(0.2))
+                                    Text("背の高い子\n二行ある")
                                     Button("押す") { }.buttonStyle(.stemcell(.outlined, size: .sm))
+                                }
+                            }
+                        }
+                    }
+
+                    // stack 方向も同じ形で見る。こちらの交差軸は横で、第3条が名指す
+                    // 「横いっぱいに広がろうとする」の直接の相手である。
+                    Row("交差軸の揃え（stack）") {
+                        Stack(gap: "sm") {
+                            ForEach(StackAlign.allCases, id: \.self) { a in
+                                Stack(gap: "sm", align: a) {
+                                    Color.orange.opacity(0.35).frame(height: 14)
+                                    Text("\(a.rawValue) / 受けない子")
+                                        .background(Color.green.opacity(0.2))
                                 }
                             }
                         }
@@ -112,10 +132,6 @@ struct Gallery: View {
         }
         .background(theme.colors.background.resolved)
         .stemcellDensity(density)
-    }
-
-    private func align(_ name: String) -> StackAlign {
-        StackAlign(rawValue: name) ?? .stretch
     }
 }
 
