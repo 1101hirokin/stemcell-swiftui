@@ -33,6 +33,8 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
 
     @Environment(\.stemcellTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
 
     public func makeBody(configuration: Configuration) -> some View {
         Button {
@@ -51,6 +53,10 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // 使えないものは相互作用の状態を出さない（state.md §3.2）。
+        .onHover { hovering = isEnabled && $0 }
+        .animation(transition, value: hovering)
+        .animation(transition, value: configuration.isOn)
         // 役は checkbox である（契約）。guidelines/accessibility.md の写像表は
         // checkbox を .isToggle へ写すと定めている。radio の処方（.isButton + .isSelected）を
         // 当てると VoiceOver が「ボタン、選択済み」と読み、役が違って届く。
@@ -62,7 +68,18 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
 
     /// 使えないときは intent ごと差し替える（state.md §7）。
     private var markFill: Color {
-        (isEnabled ? theme.colors.primaryBackground : DisabledColors.bg).resolved
+        guard isEnabled else { return DisabledColors.bg.resolved }
+        // 面のチャンネル。触れているあいだは濃くする（state.md §3.3）。
+        return (hovering
+            ? StemcellIntent.primary.colors.bgHover
+            : theme.colors.primaryBackground).resolved
+    }
+
+    private var transition: Animation? {
+        let d = reduceMotion
+            ? StemcellTokens.Motion.None.duration
+            : StemcellTokens.Motion.Duration.fast02
+        return d == 0 ? nil : .easeOut(duration: d)
     }
 
     @ViewBuilder

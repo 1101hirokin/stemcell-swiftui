@@ -31,7 +31,8 @@ enum DisabledColors {
 
 /// 一つの intent が持つ役割一式。明暗の対で持つ。
 struct IntentColors {
-    let bg, fg, border, bgHover, bgPressed: DynamicColor
+    let bg, fg, border: DynamicColor
+    let bgHover, bgPressed: DynamicColor
     let softBg, softFg, softBgHover, softBgPressed: DynamicColor
 }
 

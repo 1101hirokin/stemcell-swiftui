@@ -16,6 +16,8 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
 
     @Environment(\.stemcellTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
 
     public func body(content: Content) -> some View {
         HStack(spacing: StemcellTokens.Spacing.Inline.md) {
@@ -29,10 +31,15 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
                 // 読むだけは打てない。ARIA は readonly を「編集はできないが、それ以外は
                 // 操作できる」と定め、Web は HTML の readonly 属性がそのまま持っている。
                 // SwiftUI の TextField にその状態が無いので、中身だけを無効にして打てなく
-                // する。焦点を受けられなくなるぶんを満たせない。HOLES #8 に記録した。
+                // する。焦点を受けられなくなるぶん「それ以外は操作できる」を満たせない。
+                // HOLES #8 に記録した。
+                //
+                // 無効にするのは content だけである。囲いは無効にしない。面と枠の色は
+                // 上の isEnabled から引いており、読むだけと使えないことは別のままにする
+                // （state.md §6）。
                 .disabled(readOnly)
                 // .disabled() は字も灰へ落とす。それだと読むだけが使えないものと同じ姿に
-                // なり、state.md §6 が別だと定めているものが見分けられなくなる。
+                // なり、§6 が別だと定めているものが見分けられなくなる。実際に一度そうなった。
                 // 打てないことだけを借りて、字の色は地の字色へ戻す。
                 .foregroundStyle(contentForeground)
             end
@@ -46,6 +53,9 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
                 RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control, style: .continuous)
                     .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
             }
+            // 使えないものは相互作用の状態を出さない（state.md §3.2）。
+            .onHover { hovering = isEnabled && $0 }
+            .animation(transition, value: hovering)
     }
 
     /// 読むだけの字色。打てないことだけを .disabled() から借り、灰へ落ちるのを打ち消す。
@@ -54,11 +64,21 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
         isEnabled ? theme.colors.foreground.resolved : DisabledColors.fg.resolved
     }
 
+    private var transition: Animation? {
+        let d = reduceMotion
+            ? StemcellTokens.Motion.None.duration
+            : StemcellTokens.Motion.Duration.fast02
+        return d == 0 ? nil : .easeOut(duration: d)
+    }
+
+
     /// 不正は intent を danger へ差し替える（state.md §7）。判定はアプリが持つ。
     /// 読むだけは無効ではない。枠は残し、面だけを地へ寄せて「打てない」と見せる。
     private var surface: Color {
         if !isEnabled { return DisabledColors.softBg.resolved }
         if readOnly { return theme.colors.background.resolved }
+        // 面のチャンネル。読むだけの欄はホバーに応えない。打てないものに反応を返さない。
+        if hovering && !readOnly { return StemcellIntent.plain.colors.softBgHover.resolved }
         return theme.colors.surface.resolved
     }
 
