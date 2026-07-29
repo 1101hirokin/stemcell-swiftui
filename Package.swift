@@ -8,6 +8,9 @@ let package = Package(
     platforms: [.iOS(.v26), .macOS(.v26)],
     products: [
         .library(name: "Stemcell", targets: ["Stemcell"]),
+        // 実機で見るための見本。macOS では `swift run Example` で立ち上がる。
+        // iOS の実機へ入れる Xcode ターゲットは、macOS の側で足す（Example/README.md）。
+        .executable(name: "Example", targets: ["Example"]),
     ],
     dependencies: [
         // 版は npm の側と同じ番号である。源が一つなので番号も一つにする。
@@ -17,6 +20,7 @@ let package = Package(
         .target(name: "Stemcell", dependencies: [
             .product(name: "StemcellTokens", package: "stemcell-tokens"),
         ]),
+        .executableTarget(name: "Example", dependencies: ["Stemcell"], path: "Example/Sources"),
         .testTarget(name: "StemcellTests", dependencies: ["Stemcell"]),
     ]
 )
