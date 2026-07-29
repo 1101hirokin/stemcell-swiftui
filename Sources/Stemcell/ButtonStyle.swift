@@ -23,13 +23,13 @@ public struct StemcellButtonStyle: ButtonStyle {
         let pressed = configuration.isPressed
 
         configuration.label
+            // 字の役は label-lg である（contracts/Button/contract.json の tokensRequired が
+            // typography.label-lg を挙げている）。段では変えない。Web も全段で当てている。
+            // 前の版は役を一つも当てておらず、周囲の既定（.body の 17pt）で組んでいた。
+            .textStyle(.labelLg)
             .padding(.vertical, size.inset)
             .padding(.horizontal, size.inset * 2)
             .frame(maxWidth: fullWidth ? .infinity : nil)
-            // iOS の当たり判定の床は 44pt（size.md §4）。トークンが存在しないので数を直に書く。
-            // size.md §7 が「最低基準の値は foundations にも @stemcell/tokens にも無い」と
-            // 未確定にしているところで、HOLES #4 に記録した。
-            .frame(minWidth: 44, minHeight: 44)
             .foregroundStyle(foreground(c).resolved)
             .background(background(c, pressed: pressed))
             .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
@@ -39,6 +39,20 @@ public struct StemcellButtonStyle: ButtonStyle {
                         .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
                 }
             }
+            // ここから下は当たり判定の話で、姿の話ではない。
+            //
+            // size.rules.json は minimumTargetSize を appliesTo: hit-region と定め、
+            // 「見た目の大きさではなく押せる範囲。したがって段と密度は見た目を詰めてよい」と
+            // 註釈している。だから枠は面より外に置く。前の版は面より前に置いていて、
+            // sm の段が 36.5pt から 44.0pt へ膨らみ、段を一つ潰していた。
+            //
+            // contentShape が要るのは、面を持たない強調度（outlined と text）が透明な地を
+            // 持つからである。SwiftUI は透明な画素を押せる範囲に数えないので、字の上でしか
+            // 反応しなかった。実機で見つかった。
+            //
+            // 床の値をトークンから引けないのは size.md §7 が未確定にしているためで、HOLES #4。
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
     }
 
     private func foreground(_ c: IntentColors) -> DynamicColor {
@@ -86,7 +100,7 @@ extension ButtonStyle where Self == StemcellButtonStyle {
     ) -> StemcellButtonStyle {
         StemcellButtonStyle(
             variant: variant, intent: intent, size: size,
-            fullWidth: fullWidth, corner: StemcellTokens.Shape.Semantic.control
+            fullWidth: fullWidth, corner: StemcellTokens.Shape.Continuous.Semantic.control
         )
     }
 
@@ -111,7 +125,7 @@ public enum IconButtonShape: String, Sendable, CaseIterable {
 
     var corner: CGFloat {
         switch self {
-        case .control: return StemcellTokens.Shape.Semantic.control
+        case .control: return StemcellTokens.Shape.Continuous.Semantic.control
         case .pill: return StemcellTokens.Shape.Semantic.pill
         }
     }

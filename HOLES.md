@@ -96,8 +96,9 @@ iPad Pro 13 で測った。
 `size.rules.json` の `minimumTargetSize` は `"appliesTo": "hit-region"` と定め、
 註釈に「見た目の大きさではなく押せる範囲。したがって段と密度は見た目を詰めてよい。
 層が違う」と書いている。押せる範囲へ当てるべきものを見た目へ当てた実装の誤りである。
-`.frame` を `.background()` の後ろへ移せば、三段がそのまま見えて床も満たせる。
-別の PR で直す。
+`.frame` を `.background()` の後ろへ移し、`.contentShape(Rectangle())` を足して直した。
+面を持たない強調度（outlined と text）は透明な地を持ち、SwiftUI は透明な画素を押せる範囲に
+数えないので、字の上でしか反応していなかった。これも実機で見つかった。
 
 Web も守れていない。`Disclosure` と `Tabs` と `Rating` は `min-block-size: 1.5rem` を
 要素そのものへ当てている。24px が自然な高さを下回るので見た目に出ないだけである。

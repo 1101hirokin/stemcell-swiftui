@@ -20,17 +20,34 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
     public func body(content: Content) -> some View {
         HStack(spacing: StemcellTokens.Spacing.Inline.md) {
             start
-            content.textFieldStyle(.plain)
+            content
+                .textFieldStyle(.plain)
+                // 読むだけは打てない。ARIA は readonly を「編集はできないが、それ以外は
+                // 操作できる」と定め、Web は HTML の readonly 属性がそのまま持っている。
+                // SwiftUI の TextField にその状態が無いので、中身だけを無効にして打てなく
+                // する。焦点を受けられなくなるぶんを満たせない。HOLES #8 に記録した。
+                .disabled(readOnly)
+                // .disabled() は字も灰へ落とす。それだと読むだけが使えないものと同じ姿に
+                // なり、state.md §6 が別だと定めているものが見分けられなくなる。
+                // 打てないことだけを借りて、字の色は地の字色へ戻す。
+                .foregroundStyle(contentForeground)
             end
         }
             .padding(size.inset)
-            .frame(minHeight: 44) // 当たり判定の床（size.md §4）。トークンが無い。HOLES #4
+            // 床は幅にも要る。Button は minWidth も持っているのに、ここは高さだけだった。
+            .frame(minWidth: 44, minHeight: 44) // size.md §4。トークンが無い。HOLES #4
             .background(surface)
-            .clipShape(RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.control, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: StemcellTokens.Shape.Semantic.control, style: .continuous)
+                RoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control, style: .continuous)
                     .strokeBorder(borderColor, lineWidth: StemcellTokens.Shape.borderWidth)
             }
+    }
+
+    /// 読むだけの字色。打てないことだけを .disabled() から借り、灰へ落ちるのを打ち消す。
+    /// 使えないときは灰のままでよい。そちらは本当に無効だからである。
+    private var contentForeground: Color {
+        isEnabled ? theme.colors.foreground.resolved : DisabledColors.fg.resolved
     }
 
     /// 不正は intent を danger へ差し替える（state.md §7）。判定はアプリが持つ。
