@@ -36,12 +36,11 @@ public struct Field<Content: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: StemcellTokens.Spacing.Stack.sm) {
-            Text(label)
+            // 視覚の標示は部品が出す（field.md §4 の裁定。多数派の側）。
+            // 記号そのものは seed であって規範ではない。
+            // 連結は Text 同士でしかできないので、役を当てるのは連ねたあとである。
+            (Text(label) + Text(required ? " *" : "").foregroundColor(StemcellIntent.danger.colors.bg.resolved))
                 .textStyle(.labelMd)
-                // 視覚の標示は部品が出す（field.md §4 の裁定。多数派の側）。
-                // 記号そのものは seed であって規範ではない。
-                + Text(required ? " *" : "")
-                .foregroundStyle(StemcellIntent.danger.colors.bg.resolved)
 
             content
 

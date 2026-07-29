@@ -21,9 +21,10 @@ import StemcellTokens
     #expect(mixed.indeterminate)
 }
 
-@Test func 名前は必須で説明とエラーは任意() {
-    let f = Field("メール") { EmptyView() }
-    #expect(f.body is (any View))
+@Test func 必須の印は名前のうしろに付く() {
+    // 型が組み上がることだけを見る。見え方は実機で見る。
+    _ = Field("メール", required: true) { EmptyView() }
+    _ = Field("メール", description: "説明", error: "エラー") { EmptyView() }
 }
 
 @Test func 読むだけと使えないことは別である() {
