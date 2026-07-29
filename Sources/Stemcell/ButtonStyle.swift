@@ -27,6 +27,23 @@ public struct StemcellButtonStyle: ButtonStyle {
             // typography.label-lg を挙げている）。段では変えない。Web も全段で当てている。
             // 前の版は役を一つも当てておらず、周囲の既定（.body の 17pt）で組んでいた。
             .textStyle(.labelLg)
+            // 折り返さない。入りきらないときは省略記号で切る。
+            //
+            // 主要 DS を一次資料で当たると、一行に保つ側が多数である（Material 3 の実装、
+            // UIKit の古典、shadcn/ui、Primer、Ant Design、Atlaskit）。そのうち省略を選ぶのが
+            // Material 3 と UIKit の古典と Atlaskit で、はみ出す側の三つは意図して選んだと
+            // いうより対策していないだけに見える。
+            //
+            // SwiftUI の既定は lineLimit が nil で折り返すが、それは Apple の作法ではない。
+            // UILabel の既定は numberOfLines 1 の byTruncatingTail で、Apple の中でも割れている。
+            //
+            // 折り返しを許さないのは、どこで折るかが言語依存になり、CJK と欧文で意味が変わる
+            // からである。三つの土地で一意に実装できなくなる。
+            //
+            // 実害も見た。横の余白が md で左右 48pt を無条件に食うので、親がそれを下回ると
+            // 字の有効幅が 0 になり、文字が一つも描かれないまま高さだけが 153.5pt まで伸びた。
+            .lineLimit(1)
+            .truncationMode(.tail)
             .padding(.vertical, size.inset)
             .padding(.horizontal, size.inset * 2)
             .frame(maxWidth: fullWidth ? .infinity : nil)
