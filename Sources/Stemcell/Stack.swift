@@ -1,27 +1,32 @@
 import SwiftUI
 
 /// 一方向に並べる（Stack.md）。
+/// 並べる向き。
+///
+/// Stack の中の入れ子にしない。Stack が生成型なので、入れ子にすると外から呼ぶときに
+/// `Stack<EmptyView>.Align` と書くことになり、型推論も壊れる（実際に壊した）。
+public enum StackDirection: String, Sendable, CaseIterable {
+    /// 積む向き。読みの流れに沿って縦に並ぶ。
+    case stack
+    /// 並ぶ向き。行の中に横に並ぶ。
+    case inline
+}
+
+/// 交差軸の揃え。
+public enum StackAlign: String, Sendable, CaseIterable {
+    case stretch, start, center, end
+}
+
 public struct Stack<Content: View>: View {
-    public enum Direction: String, Sendable, CaseIterable {
-        /// 積む向き。読みの流れに沿って縦に並ぶ。
-        case stack
-        /// 並ぶ向き。行の中に横に並ぶ。
-        case inline
-    }
-
-    public enum Align: String, Sendable, CaseIterable {
-        case stretch, start, center, end
-    }
-
-    private let direction: Direction
+    private let direction: StackDirection
     private let gap: String
-    private let align: Align
+    private let align: StackAlign
     private let content: Content
 
     public init(
-        direction: Direction = .stack,
+        direction: StackDirection = .stack,
         gap: String = "md",
-        align: Align = .stretch,
+        align: StackAlign = .stretch,
         @ViewBuilder content: () -> Content
     ) {
         self.direction = direction
