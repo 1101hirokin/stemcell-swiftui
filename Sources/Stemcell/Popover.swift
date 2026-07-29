@@ -30,6 +30,9 @@ extension View {
     /// 契約の `openchange` は `isPresented` の束縛一本へ畳む。SwiftUI の `.popover` が
     /// 外側を押したときも Escape のときも同じ束縛を落とすので、二つ目の口を作らない。
     ///
+    /// `layer.popover.z` は引いていない。native の提示は OS が層を持つので、z を差し込む
+    /// 場所が構造として無い（overlay.md §7）。`Dialog` と同じ理由で、漏れではなく対象外である。
+    ///
     /// - Parameters:
     ///   - isPresented: 開いているか。値であって状態ではない（overlay.md §6）。
     ///   - placement: 錨に対する優先の開き方向。既定は下。
@@ -70,38 +73,56 @@ struct PopoverSurface<C: View>: View {
     @ViewBuilder let content: () -> C
 
     @Environment(\.stemcellTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Box(inset: "md") {
             content()
         }
+        // 中身の高さを内容で止める。これが無いと、複数行の中身を渡したときに面が伸びて
+        // 画面の端で切られ、角丸も縁も見えないまま本文がちぎれる。錨が下寄りにあるほど
+        // 起きやすい。一行の中身では起きないので、気づきにくい。実機で見つかった。
+        //
+        // native は本来、余裕のある側へ向きを反転して収める。素の .popover ではそう動く。
+        // 伸びた面がどちら向きでも画面を超えるので、その働きを潰していた。
+        .fixedSize(horizontal: false, vertical: true)
         .foregroundStyle(theme.colors.foreground.resolved)
         // 面は surface-raised の段である（elevation.md §5 の表）。
         .background(theme.colors.surfaceRaised.resolved)
-        // 浮かぶ面は縁を持つ。影だけで浮かせると、強制配色で影が落ちたときに境界が消えて
-        // 面と地が同じ色で溶ける（契約の a11y notes、elevation.md §3）。
+        .clipShape(SuperellipseRoundedRectangle(
+            cornerRadius: StemcellTokens.Shape.Continuous.Semantic.popover
+        ))
+        // 浮かぶ面は縁を持つ。影だけで地から浮かせると、強制配色で影が落ちたときに境界が
+        // 消えて面と地が同じ色で溶ける（契約の a11y notes、elevation.md §3）。
         // 相互作用する部品の境界ではないので 3:1 は要らず、地との差が分かる最も薄い線でよい。
+        //
+        // 切り取りの後ろへ置いている。前へ置いた版でも線を拾えなかったので移したが、
+        // 順序が効いたのかは切り分けていない。実測では上端で EAEAEA を拾う。
+        // トークンの E6E8EC を 1pt で白へ重ねた見え方と合う。影との区別は付きにくい。
         .overlay {
             SuperellipseRoundedRectangle(
                 cornerRadius: StemcellTokens.Shape.Continuous.Semantic.popover
             )
             .strokeBorder(theme.colors.divider.resolved, lineWidth: StemcellTokens.Shape.borderWidth)
         }
-        .clipShape(SuperellipseRoundedRectangle(
-            cornerRadius: StemcellTokens.Shape.Continuous.Semantic.popover
-        ))
         // 影は二層である（elevation.md §4）。modal より一段浅い。
-        .shadow(
-            color: theme.colors.shadowPenumbra.resolved,
-            radius: StemcellTokens.Elevation.Popover.level * 4,
-            y: StemcellTokens.Elevation.Popover.level
-        )
-        .shadow(
-            color: theme.colors.shadowUmbra.resolved,
-            radius: StemcellTokens.Elevation.Popover.level,
-            y: StemcellTokens.Elevation.Popover.level / 2
-        )
+        .stemcellShadow(level: StemcellTokens.Elevation.Popover.level, colors: theme.colors)
         // 面の地を透かして自分で描く。native の地には縁を当てられない。
+        // ここで iOS 26 の既定であるガラスを手放している。`Dialog` と同じ判断で、
+        // 理由も同じである（HOLES #15）。DESIGN.md §4 が挙げていた「ガラスの上のガラス」は、
+        // 両方がガラスを捨てたので前提ごと無くなった。HOLES #18。
         .presentationBackground(.clear)
+        // 出入りの時間を引く（契約の tokensRequired）。ただし native の提示が自分の
+        // 出入りを持っていて、ここで書いた値がどこまで効くかは確かめていない。
+        .transition(.opacity)
+        .animation(transition, value: true)
+    }
+
+    /// 動きを減らす設定のときは時間を持たない。
+    private var transition: Animation? {
+        let d = reduceMotion
+            ? StemcellTokens.Motion.None.duration
+            : StemcellTokens.Motion.Entrance.duration
+        return d == 0 ? nil : .easeOut(duration: d)
     }
 }

@@ -132,16 +132,7 @@ struct DialogSurface<T: View, C: View, A: View>: View {
             // 影は二層である（elevation.md §4）。色と不透明度はトークンが持つ。
             // 幕の色を薄めて代用していたが、幕は既に 0.4 を持つので実効が 0.07 まで落ちて
             // 影として立っていなかった。レベルから半径と下げ幅を導くのは §7 のとおり。
-            .shadow(
-                color: theme.colors.shadowPenumbra.resolved,
-                radius: StemcellTokens.Elevation.Modal.level * 4,
-                y: StemcellTokens.Elevation.Modal.level
-            )
-            .shadow(
-                color: theme.colors.shadowUmbra.resolved,
-                radius: StemcellTokens.Elevation.Modal.level,
-                y: StemcellTokens.Elevation.Modal.level / 2
-            )
+            .stemcellShadow(level: StemcellTokens.Elevation.Modal.level, colors: theme.colors)
             // 読みやすい上限で止める。伸びるのは縦だけである（契約の expressive）。
             .frame(maxWidth: 420)
             .padding(StemcellTokens.Spacing.Inset.lg)

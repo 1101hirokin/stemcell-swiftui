@@ -275,3 +275,26 @@ DESIGN.md §4 は「自前で面を描かず SwiftUI の部品に乗る、とい
 `elevation.md` §6 は幕の目的を「背後を減光して手前の modal へ注意を集めつつ、元の文脈を
 見失わない程度に透かす」と書いている。暗いテーマでその目的が果たせていない。基底色を
 自前で透過させ直すことは同じ節が禁じているので、実装では直さない。上流の裁定を待つ。
+
+## #17 `Popover` の焦点の出入りも実機で確かめていない
+
+`Dialog` と同じ形の未検証である（#14）。`Popover` は焦点を中へ入れること、捕まえないこと、
+閉じたら錨へ戻すことを native の `.popover` へ委ねている。`overlay.rules.json` の
+`focus.interactiveEntersOrVirtual` がそれにあたる。
+
+VoiceOver で見ていない。`overlay.md` §7 は popover 類へ modal 類より弱い保証しか置いて
+いないので、断定は modal のとき以上に危うい。
+
+## #18 ガラスの上のガラスという問いが消えた
+
+DESIGN.md §4 は「ガラスはガラスを透かせないので、`Popover` を `Dialog` の上に出したときに
+何が起きるか」を実機で見ると書いていた。その問いは前提ごと無くなった。
+
+`Dialog` も `Popover` も `.presentationBackground(.clear)` でガラスを手放しているためである
+（#15 に `Dialog` の理由がある。`Popover` は縁を当てられないという同じ形の理由による）。
+ガラスが二枚とも無いので、透かせるかどうかを問う相手が居ない。
+
+重ねたときの姿は見た。`Dialog` の中から `Popover` を出すと、層は正しく `Popover` が前に
+出て読める。幕も二重にならない（popover 類は `overlay.rules.json` の `scrim:false` で
+幕を敷かない）。ただしこれは §4 が恐れていたものを確かめたのではなく、別の問いに答えただけ
+である。DESIGN.md §4 はいずれ書き直す要がある。
