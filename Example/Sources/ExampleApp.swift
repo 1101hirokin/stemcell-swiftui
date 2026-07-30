@@ -30,6 +30,9 @@ struct Gallery: View {
     @State private var mixed = false
     @State private var lightOpen = false
     @State private var explicitOpen = false
+    @State private var popDown = false
+    @State private var popUp = false
+    @State private var popOverDialog = false
 
     var body: some View {
         ScrollView {
@@ -128,6 +131,25 @@ struct Gallery: View {
                         }
                     }
 
+                    // 錨に従う一時の面。開き方向の二つと、覆いの上に出したときを見る。
+                    Row("錨に従う面") {
+                        Stack(direction: .inline, gap: "sm", align: .center) {
+                            Button("下へ開く") { popDown = true }
+                                .buttonStyle(.stemcell(.soft))
+                                .stemcellPopover(isPresented: $popDown) {
+                                    Stack(gap: "sm", align: .start) {
+                                        Text("下へ開いた面").textStyle(.titleSm)
+                                        Text("外側を押すか Escape で閉じる。").textStyle(.bodySm)
+                                    }
+                                }
+                            Button("上へ開く") { popUp = true }
+                                .buttonStyle(.stemcell(.soft))
+                                .stemcellPopover(isPresented: $popUp, placement: .blockStart) {
+                                    Text("上へ開いた面").textStyle(.bodyMd)
+                                }
+                        }
+                    }
+
                     // 交差軸の揃えは、提案を受ける子と受けない子で見え方が割れる。両方を並べる。
                     // 橙は提案をそのまま受ける子（Color）、緑は自分の理想で止まる子（Text）である。
                     // 背の高い子を混ぜて、行の交差軸をそこで決めさせている。
@@ -168,7 +190,14 @@ struct Gallery: View {
         } content: {
             Text("この画面で書いたものは残りません。背後を押すか Escape でも閉じられます。")
         } actions: {
-            Button("閉じる") { lightOpen = false }.buttonStyle(.stemcell(.text))
+            Stack(direction: .inline, gap: "sm", align: .center) {
+                Button("面を重ねる") { popOverDialog = true }
+                    .buttonStyle(.stemcell(.soft))
+                    .stemcellPopover(isPresented: $popOverDialog) {
+                        Text("覆いの上に出した面").textStyle(.bodySm)
+                    }
+                Button("閉じる") { lightOpen = false }.buttonStyle(.stemcell(.text))
+            }
         }
         .stemcellDialog(isPresented: $explicitOpen, dismiss: .explicit) {
             Text("本当に消しますか")

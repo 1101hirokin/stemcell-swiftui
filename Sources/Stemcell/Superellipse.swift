@@ -97,3 +97,16 @@ extension StemcellTokens.Shape {
     /// 画素の量子化ぶんの差なので、式のほうを採る。
     public static var lameExponent: CGFloat { pow(2, 1.8) }
 }
+
+extension View {
+    /// 高さの段から影を当てる（elevation.md §4 の二層、§7 の「レベルから radius と offset を
+    /// 導くのは SwiftUI 側の仕事」）。色と不透明度はトークンが持つ。
+    ///
+    /// 部品ごとに同じ式を書くと、いつか片方だけずれる。実際 `Dialog` と `Popover` で
+    /// 同じ式が二度書かれていた。
+    func stemcellShadow(level: CGFloat, colors: StemcellColors) -> some View {
+        self
+            .shadow(color: colors.shadowPenumbra.resolved, radius: level * 4, y: level)
+            .shadow(color: colors.shadowUmbra.resolved, radius: level, y: level / 2)
+    }
+}

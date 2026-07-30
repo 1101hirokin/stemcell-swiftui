@@ -13,6 +13,10 @@ public struct StemcellColors: Sendable, Hashable {
     public var fgMuted: DynamicColor
     public var primaryBackground: DynamicColor
     public var primaryForeground: DynamicColor
+    /// popover の面（elevation.md §5 の表）。
+    public var surfaceRaised: DynamicColor
+    /// 浮かぶ面の縁。影が落ちる環境でも境界が残るように引く（Popover の a11y notes）。
+    public var divider: DynamicColor
     /// modal と notification の面（elevation.md §5 の表）。surface とは別の段である。
     /// 明るいテーマでは surface と同値になるので、暗いテーマでしか差が出ない。
     public var overlay: DynamicColor
@@ -30,6 +34,8 @@ public struct StemcellColors: Sendable, Hashable {
         fgMuted: DynamicColor,
         primaryBackground: DynamicColor,
         primaryForeground: DynamicColor,
+        surfaceRaised: DynamicColor,
+        divider: DynamicColor,
         overlay: DynamicColor,
         scrim: DynamicColor,
         shadowUmbra: DynamicColor,
@@ -42,6 +48,8 @@ public struct StemcellColors: Sendable, Hashable {
         self.fgMuted = fgMuted
         self.primaryBackground = primaryBackground
         self.primaryForeground = primaryForeground
+        self.surfaceRaised = surfaceRaised
+        self.divider = divider
         self.overlay = overlay
         self.scrim = scrim
         self.shadowUmbra = shadowUmbra
@@ -95,6 +103,14 @@ extension StemcellTheme {
             primaryForeground: .init(
                 light: StemcellThemeStandardLight.Color.Semantic.Primary.fg,
                 dark: StemcellThemeStandardDark.Color.Semantic.Primary.fg
+            ),
+            surfaceRaised: .init(
+                light: StemcellThemeStandardLight.Color.App.surfaceRaised,
+                dark: StemcellThemeStandardDark.Color.App.surfaceRaised
+            ),
+            divider: .init(
+                light: StemcellThemeStandardLight.Color.App.divider,
+                dark: StemcellThemeStandardDark.Color.App.divider
             ),
             overlay: .init(
                 light: StemcellThemeStandardLight.Color.App.overlay,
