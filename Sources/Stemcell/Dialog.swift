@@ -23,7 +23,7 @@ extension View {
     /// ただし実機の VoiceOver で確かめてはいない。HOLES #14。
     ///
     /// 契約の `openchange` は別に持たない。`isPresented` の束縛一本へ畳んでいる。
-    /// SwiftUI の `.sheet(isPresented:)` がその合成そのもので、幕を押しても Escape でも
+    /// SwiftUI の `.sheet(isPresented:)` がその合成そのもので、scrim を押しても Escape でも
     /// 同じ束縛が更新される。二つの口を作ると真実が二つになる（第2条）。
     ///
     /// `layer.modal.z` は引いていない。native の提示は OS が層を持つので、z を差し込む
@@ -59,11 +59,11 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
 
     func body(content base: Content) -> some View {
         #if os(iOS)
-        // 契約どおりに描ける土地。覆いが画面全体を取るので、幕を敷いて中央へ置ける。
+        // 契約どおりに描ける土地。覆いが画面全体を取るので、scrim を敷いて中央へ置ける。
         base.fullScreenCover(isPresented: $isPresented) {
             DialogSurface(dismiss: dismiss, isPresented: $isPresented,
                           title: title, content: self.content, actions: actions)
-                // 覆いの地を透かして、幕と札を自分で描く。契約は幕を要求しており
+                // 覆いの地を透かして、scrim と札を自分で描く。契約はscrim を要求しており
                 // （tokensRequired の scrim）、覆いの既定の地では色が指定できない。
                 .presentationBackground(.clear)
         }
@@ -71,15 +71,15 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
         // そもそも持たないので、ここは効いていない見込みが高い。無害なので置いてある。
         .interactiveDismissDisabled(dismiss == .explicit)
         #else
-        // macOS はシートへ譲る。契約は modal を「ビューポート中央」に置き、背後へ幕を敷けと
+        // macOS はシートへ譲る。契約は modal を「ビューポート中央」に置き、背後へscrim を敷けと
         // 定めるが（overlay.md §5）、macOS のシートは窓の上端から降りてきて背後を暗くしない。
         // それが platform の作法である。同じものを持つ API も無い（fullScreenCover は iOS だけ）。
         //
-        // 一度は契約どおりに描こうとして、シートの中へ幕を敷いた。ignoresSafeArea の
-        // 「いっぱい」がシートの中で止まるので、幕の箱の中に札の箱が入る二重の箱になった。
-        // 窓ではなくシートの寸法で幕が切れる。実機で見て捨てた。
+        // 一度は契約どおりに描こうとして、シートの中へscrim を敷いた。ignoresSafeArea の
+        // 「いっぱい」がシートの中で止まるので、scrim の箱の中に札の箱が入る二重の箱になった。
+        // 窓ではなくシートの寸法でscrim が切れる。実機で見て捨てた。
         //
-        // 位置と幕を platform へ譲る。面と角と影もシートが持つので描かない。書くのは
+        // 位置とscrim を platform へ譲る。面と角と影もシートが持つので描かない。書くのは
         // 見出しと中身と脚の並びと、字の役だけである。焦点の捕捉と Escape は無償のまま残る。
         // 裁定が要る。HOLES #19。
         base.sheet(isPresented: $isPresented) {
@@ -118,7 +118,7 @@ struct DialogSheetBody<T: View, C: View, A: View>: View {
 #endif
 
 #if os(iOS)
-/// 幕と札。覆いの中身として描く。iOS だけで使う。macOS はシートへ譲っている。
+/// scrim と札。覆いの中身として描く。iOS だけで使う。macOS はシートへ譲っている。
 struct DialogSurface<T: View, C: View, A: View>: View {
     let dismiss: DialogDismiss
     @Binding var isPresented: Bool
@@ -131,14 +131,14 @@ struct DialogSurface<T: View, C: View, A: View>: View {
 
     var body: some View {
         ZStack {
-            // 幕。色は elevation.md §6 が定める単一のもので、多重に重ねない。
+            // scrim。色は elevation.md §6 が定める単一のもので、多重に重ねない。
             theme.colors.scrim.resolved
                 .ignoresSafeArea()
                 .onTapGesture {
                     // light だけが背後で閉じる。explicit は無視する（契約の dismiss）。
                     if dismiss == .light { isPresented = false }
                 }
-                // 幕そのものは読み上げに要らない。閉じる手段は札の中に置く。
+                // scrim そのものは読み上げに要らない。閉じる手段は札の中に置く。
                 .accessibilityHidden(true)
 
             Box(inset: "lg") {
@@ -167,7 +167,7 @@ struct DialogSurface<T: View, C: View, A: View>: View {
                 cornerRadius: StemcellTokens.Shape.Continuous.Semantic.dialog
             ))
             // 影は二層である（elevation.md §4）。色と不透明度はトークンが持つ。
-            // 幕の色を薄めて代用していたが、幕は既に 0.4 を持つので実効が 0.07 まで落ちて
+            // scrim の色を薄めて代用していたが、scrim は既に 0.4 を持つので実効が 0.07 まで落ちて
             // 影として立っていなかった。レベルから半径と下げ幅を導くのは §7 のとおり。
             .stemcellShadow(level: StemcellTokens.Elevation.Modal.level, colors: theme.colors)
             // 読みやすい上限で止める。伸びるのは縦だけである（契約の expressive）。
@@ -185,7 +185,7 @@ struct DialogSurface<T: View, C: View, A: View>: View {
     /// 別に挙げている）。出るほうが速い。
     ///
     /// ただし覆いそのものの出入りは native の提示が握っていて、ここで書いた時間が
-    /// どこまで効くかは確かめていない。幕と札の不透明度には効く。
+    /// どこまで効くかは確かめていない。scrim と札の不透明度には効く。
     private var entrance: Animation? { animation(StemcellTokens.Motion.Entrance.duration) }
     private var exit: Animation? { animation(StemcellTokens.Motion.Exit.duration) }
 
