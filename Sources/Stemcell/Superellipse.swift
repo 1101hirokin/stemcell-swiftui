@@ -104,9 +104,16 @@ extension View {
     ///
     /// 部品ごとに同じ式を書くと、いつか片方だけずれる。実際 `Dialog` と `Popover` で
     /// 同じ式が二度書かれていた。
+    /// 段が 0 のときは影を当てない。半径 0 の影でも SwiftUI は合成の経路を作るので、
+    /// 見えないものに描画の代価を払うことになる。`Card` の枠の面が最初にここを踏んだ。
+    @ViewBuilder
     func stemcellShadow(level: CGFloat, colors: StemcellColors) -> some View {
-        self
-            .shadow(color: colors.shadowPenumbra.resolved, radius: level * 4, y: level)
-            .shadow(color: colors.shadowUmbra.resolved, radius: level, y: level / 2)
+        if level > 0 {
+            self
+                .shadow(color: colors.shadowPenumbra.resolved, radius: level * 4, y: level)
+                .shadow(color: colors.shadowUmbra.resolved, radius: level, y: level / 2)
+        } else {
+            self
+        }
     }
 }

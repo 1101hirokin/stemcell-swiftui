@@ -26,8 +26,15 @@ public struct Card<Content: View>: View {
     @Environment(\.stemcellTheme) private var theme
 
     public var body: some View {
+        let shape = SuperellipseRoundedRectangle(
+            cornerRadius: StemcellTokens.Shape.Continuous.Semantic.card
+        )
         content
             .padding(StemcellTokens.Spacing.Inset.md)
+            // 面を塗る側が字の色も持つ。契約は `color.app.foreground` を挙げていないが、
+            // 消費者がテーマの面を差し替えたときに字が追随しないと読めなくなる。
+            // 既定を置くだけなので、中身が上書きするのは妨げない。
+            .foregroundStyle(theme.colors.foreground.resolved)
             // 面は surface の段である（elevation.md §5 の表）。
             .background(theme.colors.surface.resolved)
             .clipShape(shape)
@@ -45,9 +52,4 @@ public struct Card<Content: View>: View {
                             colors: theme.colors)
     }
 
-    private var shape: SuperellipseRoundedRectangle {
-        SuperellipseRoundedRectangle(
-            cornerRadius: StemcellTokens.Shape.Continuous.Semantic.card
-        )
-    }
 }
