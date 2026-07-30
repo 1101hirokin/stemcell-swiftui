@@ -301,7 +301,7 @@ struct Gallery: View {
         } actions: {
             Stack(direction: .inline, gap: "sm", align: .center) {
                 Button("面を重ねる") { popOverDialog = true }
-                    .buttonStyle(.stemcell(.soft))
+                    .buttonStyle(.stemcell(.outlined))
                     .stemcellPopover(isPresented: $popOverDialog) {
                         Text("覆いの上に出した面").textStyle(.bodySm)
                     }

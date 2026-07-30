@@ -57,6 +57,11 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
     @ViewBuilder let content: () -> C
     @ViewBuilder let actions: () -> A
 
+    @Environment(\.stemcellTheme) private var theme
+    /// 敷く先の大きさ。macOS のシートは中身の大きさで決まるので、窓いっぱいの幕を敷くには
+    /// 大きさを外から渡すしかない。修飾子を当てた面を測って使う。
+    @State private var hostSize: CGSize = .zero
+
     func body(content base: Content) -> some View {
         #if os(iOS)
         // 契約どおりに描ける土地。覆いが画面全体を取るので、scrim を敷いて中央へ置ける。
@@ -79,9 +84,15 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
         // 「いっぱい」がシートの中で止まるので、scrim の箱の中に札の箱が入る二重の箱になった。
         // 窓ではなくシートの寸法でscrim が切れる。実機で見て捨てた。
         //
-        // 位置とscrim を platform へ譲る。面と角と影もシートが持つので描かない。書くのは
-        // 見出しと中身と脚の並びと、字の役だけである。焦点の捕捉と Escape は無償のまま残る。
-        // 裁定が要る。HOLES #19。
+        // 譲りすぎていた。位置も scrim も面も角も影も platform に任せていて、契約の姿に
+        // どれも似ていなかった。窓の飾りがそのまま出ていた。web と並べて見せられて気づいた。
+        //
+        // シートの地は `presentationBackground(.clear)` で透かせる。透かしたうえで、修飾子を
+        // 当てた面の大きさを測ってシートへ渡すと、幕を窓いっぱいに敷いて札を中央へ置ける。
+        // 契約の姿になる。焦点の捕捉と Escape と背後の不活性は、シートのものが残る。
+        //
+        // 残るのは出入りの動きである。シートは上から降りてくるという platform の作法を持って
+        // いて、契約の entrance と exit がそこへ効かない。HOLES #19。
         base
             // light は背面でも閉じる（契約の dismiss）。macOS のシートは窓を覆わないので、
             // 背面がそのまま残る。押せる面を敷いて受ける。
@@ -89,6 +100,13 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
             // 位置と scrim は platform へ譲ったが、dismiss の意味まで落としていた。
             // 提示の見た目を譲るのと、契約の prop の振る舞いを落とすのは別である。
             // 実機で押しても閉じないと指摘されて気づいた。
+            // 大きさを測る。背景に置くので版面には効かない。
+            .background {
+                GeometryReader { g in
+                    Color.clear.onAppear { hostSize = g.size }
+                        .onChange(of: g.size) { _, new in hostSize = new }
+                }
+            }
             .overlay {
                 if isPresented && dismiss == .light {
                     Color.clear
@@ -98,7 +116,17 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
                 }
             }
             .sheet(isPresented: $isPresented) {
-                DialogSheetBody(title: title, content: self.content, actions: actions)
+                ZStack {
+                    // 幕。敷く先の大きさは外から渡す（上の註）。
+                    theme.colors.scrim.resolved
+                        .onTapGesture { if dismiss == .light { isPresented = false } }
+                        .accessibilityHidden(true)
+                    DialogSheetBody(title: title, content: self.content, actions: actions)
+                }
+                .frame(width: max(hostSize.width, 320), height: max(hostSize.height, 240))
+                // シートの地は透かす。透かさないと窓の飾りがそのまま出て、契約の面にも
+                // 角にも影にもならない。
+                .presentationBackground(.clear)
             }
             .interactiveDismissDisabled(dismiss == .explicit)
         #endif
@@ -128,6 +156,14 @@ struct DialogSheetBody<T: View, C: View, A: View>: View {
         }
         // 読みやすい上限で止める。伸びるのは縦だけである（契約の expressive）。
         .frame(minWidth: 320, idealWidth: 420, maxWidth: 420)
+        // 面と角と影は札が持つ。シートの地を透かして自分で描く。
+        // 前は「面と角と影もシートが持つので描かない」としていたが、それだと窓の飾りが
+        // そのまま出て、契約の面にも角にも影にもならなかった。撮って測って分かった。
+        .background(theme.colors.overlay.resolved)
+        .clipShape(SuperellipseRoundedRectangle(
+            cornerRadius: StemcellTokens.Shape.Continuous.Semantic.dialog))
+        .stemcellShadow(level: StemcellTokens.Elevation.Modal.level, colors: theme.colors)
+        .padding(StemcellTokens.Spacing.Inset.lg)
     }
 }
 #endif

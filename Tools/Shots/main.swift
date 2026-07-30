@@ -24,11 +24,12 @@ enum Subjects {
         case "one-time-code-states": return AnyView(OneTimeCodeStatesProbe())
         case "drop-area": return AnyView(DropAreaProbe())
         case "file-field": return AnyView(FileFieldProbe())
+        case "dialog": return AnyView(DialogProbe())
         default: return nil
         }
     }
 
-    static var names: [String] { ["one-time-code", "one-time-code-states", "drop-area", "file-field"] }
+    static var names: [String] { ["one-time-code", "one-time-code-states", "drop-area", "file-field", "dialog"] }
 }
 
 struct OneTimeCodeProbe: View {
@@ -123,6 +124,29 @@ struct FileFieldProbe: View {
         .padding(24)
         .frame(width: 520, alignment: .leading)
         .stemcellTheme(.standard)
+    }
+}
+
+/// 覆い。sheet は別の窓として出るので、道具が `attachedSheet` から辿る。
+struct DialogProbe: View {
+    @State private var open = true
+
+    var body: some View {
+        Stack(gap: "lg", align: .start) {
+            Text("背後の文。覆いが出たときにここが減光するかを見る。").textStyle(.bodyMd)
+            Button("開く") { open = true }.buttonStyle(.stemcell())
+        }
+        .padding(24)
+        .frame(width: 520, height: 360, alignment: .leading)
+        .stemcellTheme(.standard)
+        .stemcellDialog(isPresented: $open) {
+            Text("下書きを捨てる")
+        } content: {
+            Text("この画面で書いたものは残りません。背後を押すか Escape でも閉じられます。")
+        } actions: {
+            Button("やめる") { open = false }.buttonStyle(.stemcell(.outlined))
+            Button("捨てる") { open = false }.buttonStyle(.stemcell(.filled, color: .danger))
+        }
     }
 }
 
