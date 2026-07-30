@@ -82,10 +82,25 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
         // 位置とscrim を platform へ譲る。面と角と影もシートが持つので描かない。書くのは
         // 見出しと中身と脚の並びと、字の役だけである。焦点の捕捉と Escape は無償のまま残る。
         // 裁定が要る。HOLES #19。
-        base.sheet(isPresented: $isPresented) {
-            DialogSheetBody(title: title, content: self.content, actions: actions)
-        }
-        .interactiveDismissDisabled(dismiss == .explicit)
+        base
+            // light は背面でも閉じる（契約の dismiss）。macOS のシートは窓を覆わないので、
+            // 背面がそのまま残る。押せる面を敷いて受ける。
+            //
+            // 位置と scrim は platform へ譲ったが、dismiss の意味まで落としていた。
+            // 提示の見た目を譲るのと、契約の prop の振る舞いを落とすのは別である。
+            // 実機で押しても閉じないと指摘されて気づいた。
+            .overlay {
+                if isPresented && dismiss == .light {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { isPresented = false }
+                        .accessibilityHidden(true)
+                }
+            }
+            .sheet(isPresented: $isPresented) {
+                DialogSheetBody(title: title, content: self.content, actions: actions)
+            }
+            .interactiveDismissDisabled(dismiss == .explicit)
         #endif
     }
 }
