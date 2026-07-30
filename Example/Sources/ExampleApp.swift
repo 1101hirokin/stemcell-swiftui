@@ -33,6 +33,8 @@ struct Gallery: View {
     @State private var popDown = false
     @State private var popUp = false
     @State private var popOverDialog = false
+    @State private var code = ""
+    @State private var codeDone = ""
 
     var body: some View {
         ScrollView {
@@ -118,6 +120,20 @@ struct Gallery: View {
                                 .toggleStyle(.stemcellCheckbox)
                             Toggle("第三の値", isOn: $mixed)
                                 .toggleStyle(.stemcellCheckbox(indeterminate: true, mixedValueLabel: "どちらでもない"))
+                        }
+                    }
+
+                    // 確認コード。枠は桁の数だけ並ぶが、打てる欄は一つである。
+                    // 自動入力も貼り付けも、その一つに紐づく（契約の裁定）。
+                    Row("確認コード") {
+                        Stack(gap: "sm", align: .start) {
+                            Field("コード", description: codeDone.isEmpty ? "六桁を打つ" : "揃った: \(codeDone)") {
+                                OneTimeCodeField(value: $code,
+                                                 mask: .init(showLabel: "コードを表示する",
+                                                             hideLabel: "コードを隠す")) { done in
+                                    codeDone = done
+                                }
+                            }
                         }
                     }
 
