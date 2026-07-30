@@ -28,6 +28,11 @@ import UniformTypeIdentifiers
 ///
 /// `name` は受けない。SwiftUI に HTML の form が無い（field.md §5）。
 ///
+/// 受け取った URL はセキュリティスコープ付きでありうる。開いて読むときは
+/// `startAccessingSecurityScopedResource` と `stopAccessingSecurityScopedResource` を対で
+/// 呼ぶのが Apple の作法である。この欄は値を持つだけで開かないので、呼ぶのは受け取った側の
+/// 仕事になる（`DropArea` と同じ）。
+///
 /// `capture` は受けない。`.fileImporter` に写真機を直接開く口が無い。契約は capture を
 /// 「要求であって命令ではない。持たない環境では通常の選択画面が開く」と書いているので、
 /// 常に通常の選択画面が開く形が、その退避そのものにあたる（第7条）。口を作って何も
@@ -109,6 +114,9 @@ public struct FileField: View {
                 Text(announcement)
                     .textStyle(.bodySm)
                     .foregroundStyle(.stemcellMuted)
+                    // 中身が入れ替わる場所だと支援技術へ伝える。生きた領域そのものでは
+                    // ないが、SwiftUI にある中では一番近い。
+                    .accessibilityAddTraits(.updatesFrequently)
             }
         }
         .fileImporter(
@@ -119,7 +127,11 @@ public struct FileField: View {
             guard case .success(let picked) = result, !picked.isEmpty else { return }
             // 選択画面は accept で環境が絞っている。ここで絞り直さないのは svelte と同じで、
             // 素通しになるのは落とす経路と貼る経路だけである。
-            publish(multiple ? value + picked : picked)
+            //
+            // 数だけは念のため切る。`allowsMultipleSelection` に従うはずだが、貼る経路の
+            // ほうで切っているのにこちらで切らないと、守り方が片側だけになる。
+            let taken = multiple ? picked : Array(picked.prefix(1))
+            publish(multiple ? value + taken : taken)
         }
     }
 
@@ -140,8 +152,13 @@ public struct FileField: View {
     /// `buttonBorderShape` だけで、渡した名前は読み上げにしか効かない（HOLES #29）。
     /// 文言を環境が持つのは i18n.md §1 とはむしろ揃う。DS は文言を持たない。
     private func pasteControl(_ label: String) -> some View {
-        PasteButton(payloadType: URL.self) { urls in
-            receive(urls)
+        // 受ける型は `accept` から導く。`URL.self` を取る形も書けるが、それだと写した
+        // ものが file URL として表せる場合しか拾えない。画像を右クリックで写して貼る、
+        // という最も普通の経路は、多くの場面でビットマップとしてしか置かれない。
+        // 型で受けると環境が「貼れるかどうか」も判定してくれるので、絞り込みも native の
+        // 側へ渡せる。ただし実機で写して貼るのは確かめていない（HOLES #29）。
+        PasteButton(supportedContentTypes: allowedTypes) { providers in
+            load(providers)
         }
         .buttonBorderShape(.roundedRectangle)
         .controlSize(size.controlSize)
@@ -152,8 +169,47 @@ public struct FileField: View {
 
     /// 貼る経路の受け取り。環境の選択画面は accept で勝手に絞るが、こちらは素通しなので
     /// 同じ絞り込みを当てる（契約 §2）。件数は部品が知っているので、部品が知らせる。
+    /// 貼られたものを一時の場所へ落としてから受け取る。環境は中身を渡してくるので、
+    /// ファイルとして扱うために書き出す。写した画像に名前が無いときは型から拡張子を付ける。
+    private func load(_ providers: [NSItemProvider]) {
+        guard isEnabled else { return }
+        Task { @MainActor in
+            var urls: [URL] = []
+            for p in providers {
+                guard let type = p.registeredContentTypes.first else { continue }
+                if let url = await copyToTemp(p, type: type) { urls.append(url) }
+            }
+            if !urls.isEmpty { receive(urls) }
+        }
+    }
+
+    /// 環境が渡す表現を一時の場所へ写す。渡ってくる URL はその場限りなので、そのまま
+    /// 持つと後で読めない。
+    private func copyToTemp(_ provider: NSItemProvider, type: UTType) async -> URL? {
+        await withCheckedContinuation { done in
+            _ = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { src, _ in
+                guard let src else { return done.resume(returning: nil) }
+                let name = provider.suggestedName ?? src.lastPathComponent
+                let ext = URL(fileURLWithPath: name).pathExtension.isEmpty
+                    ? (type.preferredFilenameExtension.map { ".\($0)" } ?? "")
+                    : ""
+                let dst = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("\(UUID().uuidString)-\(name)\(ext)")
+                do {
+                    try FileManager.default.copyItem(at: src, to: dst)
+                    done.resume(returning: dst)
+                } catch {
+                    done.resume(returning: nil)
+                }
+            }
+        }
+    }
+
     private func receive(_ incoming: [URL]) {
         guard isEnabled, !incoming.isEmpty else { return }
+        // 前に言ったことは消す。残しておくと、次の操作の結果なのか前の言い残しなのかが
+        // 読む側に分からない。
+        announcement = ""
         let (accepted, rejected) = AcceptList.split(incoming, accept: accept)
         let taken = multiple ? accepted : Array(accepted.prefix(1))
         if !taken.isEmpty { publish(multiple ? value + taken : taken) }
