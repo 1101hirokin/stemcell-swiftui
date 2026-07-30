@@ -114,7 +114,9 @@ public struct OneTimeCodeField: View {
         self.length = max(1, length)
         self.charset = charset
         self.mask = mask
-        self.invalid = invalid
+        // 読むだけと不正は同時に成立しない（state.md §6）。両方来たら不正を捨てる。
+        // svelte も同じ扱いで、あちらは警告も出す。
+        self.invalid = readOnly ? false : invalid
         self.readOnly = readOnly
         self.size = size
         self.onComplete = onComplete
@@ -246,12 +248,14 @@ public struct OneTimeCodeField: View {
         SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control)
     }
 
-    /// 読むだけは無効ではない。枠は残し、面だけを地へ寄せて「打てない」と見せる
-    /// （FieldStyle と同じ）。
+    /// 読むだけは無効ではない。面は普通のままにする。
+    ///
+    /// `FieldStyle` は読むだけの面を地へ寄せているが、明るいテーマでは `surface` が
+    /// `background` の別名なので何も起きない（HOLES #24）。svelte は読むだけに視覚の差を
+    /// 与えておらず、native の属性として渡すだけである。効かない差を真似ても仕方がないので、
+    /// ここは svelte に揃えた。打てないことは押しても焦点が来ないことで伝わる。
     private var surface: Color {
-        if !isEnabled { return DisabledColors.softBg.resolved }
-        if readOnly { return theme.colors.background.resolved }
-        return theme.colors.surface.resolved
+        isEnabled ? theme.colors.surface.resolved : DisabledColors.softBg.resolved
     }
 
     /// 使えないときは字も落とす。地と縁だけ落として字を濃いまま残すと、押せそうに見える
