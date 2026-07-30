@@ -23,11 +23,12 @@ enum Subjects {
         case "one-time-code": return AnyView(OneTimeCodeProbe())
         case "one-time-code-states": return AnyView(OneTimeCodeStatesProbe())
         case "drop-area": return AnyView(DropAreaProbe())
+        case "file-field": return AnyView(FileFieldProbe())
         default: return nil
         }
     }
 
-    static var names: [String] { ["one-time-code", "one-time-code-states", "drop-area"] }
+    static var names: [String] { ["one-time-code", "one-time-code-states", "drop-area", "file-field"] }
 }
 
 struct OneTimeCodeProbe: View {
@@ -100,6 +101,31 @@ struct DropAreaProbe: View {
     }
 }
 
+struct FileFieldProbe: View {
+    @State private var files: [URL] = []
+    @State private var some: [URL] = [URL(fileURLWithPath: "/tmp/a.png")]
+
+    var body: some View {
+        Stack(gap: "lg", align: .start) {
+            Text("選ぶだけ").textStyle(.labelMd)
+            Field("画像", description: "png か jpeg") {
+                FileField(value: $files, accept: ["image/*"], triggerLabel: "ファイルを選ぶ")
+            }
+            Text("貼り付けの口を持つ / 段 sm と lg").textStyle(.labelMd)
+            FileField(value: $some, accept: ["image/*"], multiple: true, size: .sm,
+                      triggerLabel: "ファイルを選ぶ", pasteLabel: "貼り付ける",
+                      receivedLabel: "{n} 件を受け取りました", rejectedLabel: "{n} 件を弾きました")
+            FileField(value: $some, size: .lg, triggerLabel: "ファイルを選ぶ")
+            Text("不正 / 使えない").textStyle(.labelMd)
+            FileField(value: $files, invalid: true, triggerLabel: "ファイルを選ぶ")
+            FileField(value: $files, triggerLabel: "ファイルを選ぶ").disabled(true)
+        }
+        .padding(24)
+        .frame(width: 520, alignment: .leading)
+        .stemcellTheme(.standard)
+    }
+}
+
 @MainActor
 func shoot() {
     let args = CommandLine.arguments
@@ -117,7 +143,7 @@ func shoot() {
         .preferredColorScheme(dark ? .dark : .light)
         .background(StemcellTheme.standard.colors.background.resolved)
     let host = NSHostingView(rootView: root)
-    host.frame = NSRect(x: 0, y: 0, width: 520, height: 620)
+    host.frame = NSRect(x: 0, y: 0, width: 520, height: 640)
     let win = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
     win.contentView = host
     // 画面の外へ置き、前面へは出さない。

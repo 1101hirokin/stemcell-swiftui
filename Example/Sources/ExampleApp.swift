@@ -35,6 +35,7 @@ struct Gallery: View {
     @State private var popOverDialog = false
     @State private var code = ""
     @State private var codeDone = ""
+    @State private var picked: [URL] = []
     @State private var dropped: [String] = []
     @State private var refused: [String] = []
 
@@ -163,6 +164,22 @@ struct Gallery: View {
                                 Text("弾いた: \(refused.joined(separator: ", "))")
                                     .textStyle(.bodySm)
                                     .foregroundStyle(.stemcellMuted)
+                            }
+                        }
+                    }
+
+                    // ファイルを選ぶ欄。選ばせるのは環境の選択画面で、貼り付けは
+                    // PasteButton が受ける。姿は環境が持つ（HOLES #29）。
+                    Row("ファイルを選ぶ") {
+                        Stack(gap: "sm", align: .start) {
+                            Field("添付", description: picked.isEmpty
+                                  ? "画像を選ぶ"
+                                  : picked.map(\.lastPathComponent).joined(separator: ", ")) {
+                                FileField(value: $picked, accept: ["image/*"], multiple: true,
+                                          triggerLabel: "ファイルを選ぶ",
+                                          pasteLabel: "貼り付ける",
+                                          receivedLabel: "{n} 件を受け取りました",
+                                          rejectedLabel: "{n} 件を弾きました")
                             }
                         }
                     }
