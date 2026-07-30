@@ -23,7 +23,9 @@ enum AcceptList {
     }
 
     private static func matches(_ url: URL, rule: String) -> Bool {
-        let r = rule.trimmingCharacters(in: .whitespaces).lowercased()
+        // 改行も落とす。svelte の `trim()` は改行を落とすので、`.whitespaces` だけだと
+        // 規則に改行が混ざったときに二つの土地で結果が割れる。
+        let r = rule.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if r.isEmpty { return false }
         if r == "*/*" || r == "*" { return true }
         // Web の方言。拡張子で言う。

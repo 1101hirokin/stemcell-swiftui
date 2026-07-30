@@ -44,10 +44,5 @@ struct FieldAdornmentButtonStyle: ButtonStyle {
         return .clear
     }
 
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Duration.fast02
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 }

@@ -201,13 +201,7 @@ struct DialogSurface<T: View, C: View, A: View>: View {
     ///
     /// ただし覆いそのものの出入りは native の提示が握っていて、ここで書いた時間が
     /// どこまで効くかは確かめていない。scrim と札の不透明度には効く。
-    private var entrance: Animation? { animation(StemcellTokens.Motion.Entrance.duration) }
-    private var exit: Animation? { animation(StemcellTokens.Motion.Exit.duration) }
-
-    /// 動きを減らす設定のときは時間を持たない。
-    private func animation(_ seconds: TimeInterval) -> Animation? {
-        let d = reduceMotion ? StemcellTokens.Motion.None.duration : seconds
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var entrance: Animation? { StemcellMotion.entrance(reduceMotion) }
+    private var exit: Animation? { StemcellMotion.exit(reduceMotion) }
 }
 #endif

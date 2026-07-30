@@ -276,12 +276,7 @@ public struct OneTimeCodeField: View {
         return theme.colors.border.resolved
     }
 
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Duration.fast02
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 
     /// 伏せたときに見せ直す手段。契約が「必ず持つ」と定めている。打ち間違いを直す手段が
     /// 全部消して打ち直すことしか無くなるためである（PasswordField と同じ判断）。

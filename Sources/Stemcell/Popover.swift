@@ -118,11 +118,5 @@ struct PopoverSurface<C: View>: View {
         .animation(transition, value: true)
     }
 
-    /// 動きを減らす設定のときは時間を持たない。
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Entrance.duration
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.entrance(reduceMotion) }
 }

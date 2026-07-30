@@ -36,6 +36,30 @@ private func sourceFiles() throws -> [(name: String, text: String)] {
     }
 }
 
+@Test func 動きは意味の段を引く() throws {
+    // motion.md §5 は動きを意味で持つ（feedback / transition / entrance / exit）。
+    // 生の段（Duration.fast02 など）と Easing は、意味の段を組み立てるための材料である。
+    // 部品がそちらを直に引くと、意味と値の対応が実装ごとに散る。実際に散っていた。
+    // 全部品が Duration.fast02 を引き、曲線はどこも引かずに SwiftUI の .easeOut で
+    // 代用していた。Feedback.duration がたまたま fast02 と同値なので見た目に出なかった。
+    //
+    // 意味の段を一箇所へまとめた Motion.swift だけが材料へ触れてよい。
+    for (name, text) in try sourceFiles() where name != "Motion.swift" {
+        for line in text.split(separator: "\n") {
+            let l = String(line)
+            guard !l.trimmingCharacters(in: .whitespaces).hasPrefix("//") else { continue }
+            #expect(
+                !l.contains("Motion.Duration.") && !l.contains("Motion.Easing."),
+                "\(name) が動きの生の段を引いている。StemcellMotion の意味の段へ替える: \(l.trimmingCharacters(in: .whitespaces))"
+            )
+            #expect(
+                !l.contains(".easeOut(") && !l.contains(".easeIn(") && !l.contains(".easeInOut("),
+                "\(name) が SwiftUI の曲線で代用している。トークンの曲線を引く: \(l.trimmingCharacters(in: .whitespaces))"
+            )
+        }
+    }
+}
+
 @Test func トークンが出している役を実装が引いている() throws {
     // 引いていない役は、契約のその状態を実装が持っていないということである。
     // hover と焦点の輪はここで落ちた。state.md §3.3 は hover と pressed を面のチャンネルで、

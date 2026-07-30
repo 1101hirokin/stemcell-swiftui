@@ -127,10 +127,5 @@ public struct DropArea<Content: View>: View {
         SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control)
     }
 
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Duration.fast02
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 }

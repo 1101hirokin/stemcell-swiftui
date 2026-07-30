@@ -84,14 +84,8 @@ extension StemcellButtonStyle {
                 .contentShape(Rectangle())
         }
 
-        /// 状態の移りは速い側の段を引く。動きを減らす設定のときは時間を持たない
-        /// （トークンが Motion.None を秒で出している）。
-        private var transition: Animation? {
-            let d = reduceMotion
-                ? StemcellTokens.Motion.None.duration
-                : StemcellTokens.Motion.Duration.fast02
-            return d == 0 ? nil : .easeOut(duration: d)
-        }
+        /// 触れたことへの返し。時間も曲線も意味の段が持つ。
+        private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 
         private func foreground(_ c: IntentColors, variant: StemcellVariant) -> DynamicColor {
             // 使えないときは intent ごと差し替える（state.md §7）。薄めない。
