@@ -54,3 +54,13 @@ import StemcellTokens
     #expect(ClusterAlign.allCases.count == 3)
     #expect(!ClusterAlign.allCases.map(\.rawValue).contains("stretch"))
 }
+
+@Test func 語彙外の間隔は既定の段へ退避する() {
+    // 素通しすると SwiftUI の既定間隔になり、トークンでない値が入る。
+    // Stack と Cluster で退避先を揃えてある。
+    #expect(resolveSpacing("xl", scale: .gap) == nil)
+    #expect(resolveSpacing("4", scale: .stack) == nil)   // 小域の原始は受けない
+    #expect(resolveSpacing("12px", scale: .inline) == nil)
+    // 受ける側
+    #expect(resolveSpacing("12", scale: .stack) == StemcellTokens.Spacing.s12)
+}

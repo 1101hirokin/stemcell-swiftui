@@ -5,13 +5,6 @@ import StemcellTokens
 public enum ClusterAlign: String, Sendable, CaseIterable {
     case start, center, end
 
-    var vertical: VerticalAlignment {
-        switch self {
-        case .start: return .top
-        case .center: return .center
-        case .end: return .bottom
-        }
-    }
 }
 
 /// 折り返す横並び（契約の `Cluster`）。行に収まらなければ次の行へ流れる。
@@ -50,6 +43,20 @@ struct WrapLayout: Layout {
     let spacing: CGFloat
     let align: ClusterAlign
 
+    /// 子の寸法を測るのは高くつく。測る番と置く番で同じ答えが要るので、`Layout` が持つ
+    /// 仕組みへ預ける。前の版は両方で測り直していて、静止した画面でも数え直しが続いていた。
+    struct Cache {
+        var sizes: [CGSize]
+    }
+
+    func makeCache(subviews: Subviews) -> Cache {
+        Cache(sizes: subviews.map { $0.sizeThatFits(.unspecified) })
+    }
+
+    func updateCache(_ cache: inout Cache, subviews: Subviews) {
+        cache.sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+    }
+
     struct Line {
         var indices: [Int] = []
         var width: CGFloat = 0
@@ -78,8 +85,8 @@ struct WrapLayout: Layout {
         return out
     }
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
+        let sizes = cache.sizes
         // 幅が来ないときは一行に並べたときの幅を返す。折り返す相手が決まらないためである。
         let width = proposal.width ?? sizes.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(0, sizes.count - 1))
         let ls = lines(sizes, width: width)
@@ -87,8 +94,8 @@ struct WrapLayout: Layout {
         return CGSize(width: width, height: height)
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
+        let sizes = cache.sizes
         var y = bounds.minY
         for line in lines(sizes, width: bounds.width) {
             var x = bounds.minX
