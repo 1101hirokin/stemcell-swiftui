@@ -21,4 +21,3 @@ import StemcellTokens
     theme.colors.primaryBackground = DynamicColor(light: Color.red, dark: Color.red)
     #expect(theme.colors.primaryBackground != before)
 }
-
