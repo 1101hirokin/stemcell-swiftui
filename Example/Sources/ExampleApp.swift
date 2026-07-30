@@ -131,6 +131,21 @@ struct Gallery: View {
                         }
                     }
 
+                    // 折り返す横並び。窓を縮めると行が増える。揃えの三つは行ごとに解ける。
+                    Row("折り返す並び") {
+                        Stack(gap: "sm") {
+                            ForEach(ClusterAlign.allCases, id: \.self) { a in
+                                Cluster(gap: "sm", align: a) {
+                                    Text(a.rawValue).textStyle(.labelMd)
+                                    ForEach(["東京", "神奈川", "埼玉", "千葉", "茨城", "栃木", "群馬", "山梨"], id: \.self) { name in
+                                        Button(name) { }.buttonStyle(.stemcell(.soft, size: .sm))
+                                    }
+                                    Text("背の高い子\n二行ある").textStyle(.bodySm)
+                                }
+                            }
+                        }
+                    }
+
                     // 地の上の面。影の面と枠の面の二つ。暗いテーマで面が消えないかを見る場所である。
                     Row("面") {
                         Stack(direction: .inline, gap: "md", align: .start) {
@@ -144,6 +159,12 @@ struct Gallery: View {
                                 Stack(gap: "sm", align: .start) {
                                     Text("枠の面").textStyle(.titleSm)
                                     Text("影を持たず、縁で地から分ける。").textStyle(.bodySm)
+                                }
+                            }
+                            // 入れ子は段が上がらない（HOLES #21）。内側を枠にすると境界が出る。
+                            Card {
+                                Card(outlined: true) {
+                                    Text("入れ子は枠で分ける").textStyle(.bodySm)
                                 }
                             }
                         }
