@@ -58,3 +58,25 @@ private func url(_ name: String) -> URL {
     // `*/*` は型を見ないので通る。
     #expect(AcceptList.accepts(url("a.stemcell"), ["*/*"]))
 }
+
+@Test func 拡張子の無いものは型で照合できない() {
+    // `pathExtension` が空になり、型が解けない。総称にも当たらない。
+    #expect(!AcceptList.accepts(url("README"), ["text/*"]))
+    #expect(AcceptList.accepts(url("README"), ["*/*"]))
+}
+
+@Test func 点が複数あっても末尾で照合する() {
+    // `pathExtension` は最後の一つしか返さないが、拡張子の規則は名前の末尾を見るので
+    // 二段の拡張子でも当たる。
+    #expect(AcceptList.accepts(url("archive.tar.gz"), [".tar.gz"]))
+    #expect(!AcceptList.accepts(url("archive.tar.gz"), [".tar"]))
+}
+
+@Test func フォルダは型で弾かれる() {
+    // フォルダの型は MIME 型を持たないので、MIME の規則には当たらない。弾く仕組みを
+    // 別に持っているわけではなく、当たらないから通らないだけである。
+    // 拡張子で言えば通ってしまう。そこは受け取った側が見る。
+    #expect(!AcceptList.accepts(url("photos"), ["image/*"]))
+    #expect(!AcceptList.accepts(url("Some.app"), ["application/octet-stream"]))
+    #expect(AcceptList.accepts(url("Some.app"), [".app"]))
+}

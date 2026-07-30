@@ -16,7 +16,16 @@ import StemcellTokens
 /// 落ちてくる最中は状態である（RFC 0022）。何も持たずに通り過ぎたときと、持って止まった
 /// ときとで次に起きることが違うので、`hover` とは別の語彙になっている。SwiftUI はこれを
 /// 無償で持っている。`dropDestination` の `isTargeted` がそのまま `dragover` である。
-/// 出入りの深さを数える必要も無い（Web は子の上で `dragleave` が飛ぶので数えている）。
+///
+/// Web は子の上で `dragleave` が飛ぶので出入りの深さを数えているが、こちらは数えていない。
+/// ドロップ先はビューの枠へのヒットテストで決まるので同じ問題は起きない、というのが
+/// 数えなかった理由である。ただし実際にドラッグして確かめてはいない。中へ別の
+/// `dropDestination` を持つ子を置いたときの挙動も見ていない（HOLES #27）。
+///
+/// 落ちてきた URL がセキュリティスコープ付きかどうかも見ていない。`fileImporter` から
+/// 得た URL は `startAccessingSecurityScopedResource` の対で囲むのが Apple の作法だが、
+/// `dropDestination` から来た URL に同じ作法が要るかを確かめていない。要るなら、それは
+/// 受け取った側の仕事になる。面は値を持たないので、開いて読むのは常にアプリである。
 public struct DropArea<Content: View>: View {
     private let accept: [String]?
     private let label: String?
@@ -64,6 +73,9 @@ public struct DropArea<Content: View>: View {
             .clipShape(shape)
             .overlay { shape.strokeBorder(border, style: strokeStyle) }
             .animation(transition, value: dragover)
+            // 使えないときにここを止めているが、`.disabled()` が native の側でドロップ
+            // そのものを止めるなら、この番人は通らない。どちらかは確かめていない
+            // （HOLES #27）。二重でも害は無いので置いてある。
             .dropDestination(for: URL.self) { urls, _ in
                 guard isEnabled else { return false }
                 let (accepted, rejected) = AcceptList.split(urls, accept: accept)
@@ -77,7 +89,10 @@ public struct DropArea<Content: View>: View {
             // 焦点を受けるのは中に置かれた操作である。まとまりとして名前を持たせ、
             // 中身は読める形で残す。
             .accessibilityElement(children: .contain)
-            .accessibilityLabel(label ?? "")
+            // 名前は渡されたときだけ当てる。`label ?? ""` と書くと、渡されなかったときに
+            // 「名前は空である」と積極的に言うことになる。契約は中の文言を名前として使う
+            // 道を残しているので、黙っているほうが正しい。
+            .accessibilityLabel(label.map(Text.init) ?? Text(verbatim: ""))
     }
 
     /// 常のときは薄い地、落ちてくる最中は primary の薄い地。造形は Expressive である。
@@ -100,6 +115,9 @@ public struct DropArea<Content: View>: View {
     /// 形でも言う（svelte と同じ表現を選んだ）。
     private var strokeStyle: StrokeStyle {
         let w = StemcellTokens.Shape.borderWidth
+        // 点線の刻みはトークンが無い。CSS の `dotted` に相当するものが SwiftUI に無いので、
+        // 丸い端で長さをほぼ 0 にし、空きを線幅の二倍に取って点を並べている。0 は使えないので
+        // 0.01 を置く。造形は Expressive なので、契約が値を持っていないのは正しい。
         return dragover
             ? StrokeStyle(lineWidth: w)
             : StrokeStyle(lineWidth: w, lineCap: .round, dash: [0.01, w * 2])
