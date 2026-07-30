@@ -38,7 +38,10 @@ public struct Stack<Content: View>: View {
     public var body: some View {
         // 段は direction に応じて別の意味層を引く（契約）。縦に積むときと横に並べるときで
         // 要る間隔が違うからで、同じ md でも値が違う。
-        let spacing = resolveSpacing(gap, scale: direction == .stack ? .stack : .inline)
+        // 語彙外なら既定の段へ退避する。素通しすると SwiftUI の既定間隔になり、
+        // トークンでない値が入る。`Cluster` と同じ退避先にしてある。
+        let scale: SpacingScale = direction == .stack ? .stack : .inline
+        let spacing = resolveSpacing(gap, scale: scale) ?? resolveSpacing("md", scale: scale)
 
         switch direction {
         case .stack:

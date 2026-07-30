@@ -325,3 +325,26 @@ Ceded へ落とすかどうかである。
 
 シートの位置は窓の上端ではなく三分の一ほど下に出る。中身が小さいときの SwiftUI の置き方だと
 思うが、確かめていない。
+## #22 折り返す並びの RTL は無償で正しかった
+
+`Cluster.md` §4 は「RTL と縦書きでの折返し方向は論理プロパティが無償で解くはず。実装で確認」を
+未確定にしていた。横方向は確認できた。
+
+`.environment(\.layoutDirection, .rightToLeft)` を当てて iPad Pro 13 で見たところ、要素の
+並びが右起点へ反転し、折り返しの詰め方向も反転した。`Layout` の `layoutDirectionBehavior` は
+既定が `.mirrors` で、自前で反転を書いていない。書けば既定と二重に効いて壊れていた。
+何もしないのが正しかった。
+
+縦書きは確かめていない。SwiftUI に相当する汎用の機構が見当たらないので、`Cluster.md` の
+未確定はそちらだけ残る。
+
+## #23 密度がどこからも読まれていない
+
+`.stemcellDensity(_:)` を public に出しているが、`Spacing` も `Stack` も `Cluster` も
+`\.stemcellDensity` を参照していない。呼んでも何も起きない口である。
+
+`spacing.md` §5 は SwiftUI について「無し（Ceded）。`controlSize` と Dynamic Type に従う」と
+書いている。だとすると独自の密度の軸を public に出していること自体が規範とぶつかる。
+
+どちらかである。口を消して `controlSize` へ寄せるか、トークンの compact の出力を引いて
+`resolveSpacing` の段を差し替えるか。前者が §5 に沿うと自分は見ている。裁定が要る。

@@ -1,5 +1,6 @@
 import Testing
 import SwiftUI
+import StemcellTokens
 @testable import Stemcell
 
 @Test func 段の名前が間隔へ解ける() {
@@ -38,4 +39,28 @@ import SwiftUI
 @Test func 片方が語彙外なら部分適用せず余白なしへ退避する() {
     #expect(resolveInset("lg 4") == nil)
     #expect(resolveInset("md md md") == nil)
+}
+
+@Test func 折り返す並びは間隔の意味層を引く() {
+    // 契約の gap description が「段は spacing.gap の意味層を引く」と定める。
+    // 段と並びの意味層とは別の値である。
+    #expect(resolveSpacing("sm", scale: .gap) == StemcellTokens.Spacing.Gap.sm)
+    #expect(resolveSpacing("md", scale: .gap) == StemcellTokens.Spacing.Gap.md)
+    #expect(resolveSpacing("lg", scale: .gap) == StemcellTokens.Spacing.Gap.lg)
+}
+
+@Test func 折り返す並びの揃えは三つで伸びを持たない() {
+    // Stack は四つ持つが、Cluster の契約は start / center / end だけである。
+    #expect(ClusterAlign.allCases.count == 3)
+    #expect(!ClusterAlign.allCases.map(\.rawValue).contains("stretch"))
+}
+
+@Test func 語彙外の間隔は既定の段へ退避する() {
+    // 素通しすると SwiftUI の既定間隔になり、トークンでない値が入る。
+    // Stack と Cluster で退避先を揃えてある。
+    #expect(resolveSpacing("xl", scale: .gap) == nil)
+    #expect(resolveSpacing("4", scale: .stack) == nil)   // 小域の原始は受けない
+    #expect(resolveSpacing("12px", scale: .inline) == nil)
+    // 受ける側
+    #expect(resolveSpacing("12", scale: .stack) == StemcellTokens.Spacing.s12)
 }
