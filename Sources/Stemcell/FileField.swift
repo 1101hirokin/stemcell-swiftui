@@ -22,7 +22,8 @@ import UniformTypeIdentifiers
 /// 契約の prop のうち、ここが受けないものが四つある。
 ///
 /// `label` `description` `error` `required` `labelHidden` は `Field` が持つ。他の欄と
-/// 同じ解剖である（契約の a11y notes）。
+/// 同じ解剖である（契約の a11y notes）。`labelHidden` は `Field` に無かったので足した。
+/// 註だけ書いて委ねた気になっていて、委ねる先が存在しなかった。
 ///
 /// `disabled` は `.disabled()` へ委ねる。
 ///
@@ -50,6 +51,7 @@ public struct FileField: View {
     private let rejectedLabel: String?
     private let onChange: ([URL]) -> Void
     private let onReject: ([URL]) -> Void
+    private var incoming: Binding<[URL]>?
 
     /// - Parameters:
     ///   - value: 選ばれたファイル。値はアプリが持つ。
@@ -64,6 +66,13 @@ public struct FileField: View {
     ///   - receivedLabel: 貼る経路で受け取ったことを知らせる文のひな型（`{n}` を件数で置き換える）。
     ///   - rejectedLabel: 弾いたことを知らせる文のひな型（`{n}` を件数で置き換える）。
     ///   - onChange: 値が変わった。
+    ///   - incoming: 落とす面など、外から受け取らせるための入口。ここへ入れると、この欄が
+    ///     `accept` で絞り、件数を知らせ、値へ足す。受け取ったら空へ戻す。
+    ///
+    ///     `patterns/file-upload.md` §4 が「面はそのまま渡し、絞り込みと告知は値を持つ側が
+    ///     まとめて行う」と定めている。面が先に弾くと告知が二度に分かれ、後が前を上書き
+    ///     する。svelte は `export const accepted` でこれを繋いでいるが、SwiftUI の View は
+    ///     外から呼べる口を持てないので、束縛で受ける形にした。
     ///   - onReject: `accept` に合わないものを弾いた。何をするかはアプリが決める。
     public init(
         value: Binding<[URL]>,
@@ -76,6 +85,7 @@ public struct FileField: View {
         pasteLabel: String? = nil,
         receivedLabel: String? = nil,
         rejectedLabel: String? = nil,
+        incoming: Binding<[URL]>? = nil,
         onChange: @escaping ([URL]) -> Void = { _ in },
         onReject: @escaping ([URL]) -> Void = { _ in }
     ) {
@@ -89,10 +99,12 @@ public struct FileField: View {
         self.pasteLabel = pasteLabel
         self.receivedLabel = receivedLabel
         self.rejectedLabel = rejectedLabel
+        self.incoming = incoming
         self.onChange = onChange
         self.onReject = onReject
     }
 
+    @Environment(\.stemcellTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
     @State private var picking = false
     @State private var announcement = ""
@@ -119,6 +131,12 @@ public struct FileField: View {
                     .accessibilityAddTraits(.updatesFrequently)
             }
         }
+        // 外から受け取らせる入口。入ったら絞って知らせ、空へ戻す。
+        .onChange(of: incoming?.wrappedValue ?? []) { _, new in
+            guard !new.isEmpty else { return }
+            receive(new)
+            incoming?.wrappedValue = []
+        }
         .fileImporter(
             isPresented: $picking,
             allowedContentTypes: allowedTypes,
@@ -135,10 +153,44 @@ public struct FileField: View {
         }
     }
 
-    /// 選ぶ操作。`Button` をそのまま使う（第2条）。
+    /// 選ぶ操作。押す仕組みは `Button` に乗せるが、姿はこの欄が持つ。
+    ///
+    /// はじめは `.stemcell(.outlined)` を当てていた。そちらは `Button` の契約が持つ姿なので、
+    /// この欄の `tokensRequired` が名指す `color.app.surface` と `color.app.foreground` と
+    /// `typography.label-md` を一つも引かない。字も label-lg になる。svelte はこの引き金を
+    /// 自前で組んでいて、面も字も欄のトークンで塗っている。合わせた。
+    ///
+    /// 縦の余白だけが段で動く。横は常に `inset.lg` である（svelte と同じ）。`Button` は横も
+    /// 段で動かすが、それはあちらの規則で、こちらへ持ち込むと段の意味が部品ごとに割れる。
     private var trigger: some View {
-        Button(triggerLabel) { picking = true }
-            .buttonStyle(.stemcell(.outlined, color: invalid ? .danger : .plain, size: size))
+        Button { picking = true } label: {
+            Text(triggerLabel)
+                .textStyle(.labelMd)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.vertical, size.inset)
+                .padding(.horizontal, StemcellTokens.Spacing.Inset.lg)
+                .foregroundStyle(isEnabled
+                    ? theme.colors.foreground.resolved
+                    : DisabledColors.fg.resolved)
+                .background(isEnabled ? theme.colors.surface.resolved : DisabledColors.softBg.resolved)
+                .clipShape(shape)
+                .overlay { shape.strokeBorder(triggerBorder, lineWidth: StemcellTokens.Shape.borderWidth) }
+                // 押せる範囲の床は面の後ろへ敷く（HOLES #4）。
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var shape: SuperellipseRoundedRectangle {
+        SuperellipseRoundedRectangle(cornerRadius: StemcellTokens.Shape.Continuous.Semantic.control)
+    }
+
+    private var triggerBorder: Color {
+        if !isEnabled { return DisabledColors.border.resolved }
+        if invalid { return StemcellIntent.danger.colors.border.resolved }
+        return theme.colors.border.resolved
     }
 
     /// 貼り付けの口。`PasteButton` は iOS では `UIPasteControl` で、押したときだけ
