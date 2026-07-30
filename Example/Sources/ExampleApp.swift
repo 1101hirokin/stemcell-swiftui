@@ -131,6 +131,24 @@ struct Gallery: View {
                         }
                     }
 
+                    // 地の上の面。影の面と枠の面の二つ。暗いテーマで面が消えないかを見る場所である。
+                    Row("面") {
+                        Stack(direction: .inline, gap: "md", align: .start) {
+                            Card {
+                                Stack(gap: "sm", align: .start) {
+                                    Text("影の面").textStyle(.titleSm)
+                                    Text("既定。二層の影で地から浮く。").textStyle(.bodySm)
+                                }
+                            }
+                            Card(outlined: true) {
+                                Stack(gap: "sm", align: .start) {
+                                    Text("枠の面").textStyle(.titleSm)
+                                    Text("影を持たず、縁で地から分ける。").textStyle(.bodySm)
+                                }
+                            }
+                        }
+                    }
+
                     // 錨に従う一時の面。開き方向の二つと、覆いの上に出したときを見る。
                     Row("錨に従う面") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
