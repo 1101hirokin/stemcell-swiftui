@@ -6,7 +6,7 @@ import StemcellTokens
 // 混合型なので、値が語彙に合うかを見るのは実装の仕事だと契約が書いている。
 
 enum SpacingScale {
-    case inset, stack, inline
+    case inset, stack, inline, gap
 
     func step(_ name: String) -> CGFloat? {
         switch (self, name) {
@@ -19,6 +19,10 @@ enum SpacingScale {
         case (.inline, "sm"): return StemcellTokens.Spacing.Inline.sm
         case (.inline, "md"): return StemcellTokens.Spacing.Inline.md
         case (.inline, "lg"): return StemcellTokens.Spacing.Inline.lg
+        // 折り返す並びは両軸に同じ間隔を置くので、独立した意味層を持つ（spacing.md §4）。
+        case (.gap, "sm"): return StemcellTokens.Spacing.Gap.sm
+        case (.gap, "md"): return StemcellTokens.Spacing.Gap.md
+        case (.gap, "lg"): return StemcellTokens.Spacing.Gap.lg
         default: return nil
         }
     }
