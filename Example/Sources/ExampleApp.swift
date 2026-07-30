@@ -129,8 +129,10 @@ struct Gallery: View {
                         Stack(gap: "sm", align: .start) {
                             Field("コード", description: codeDone.isEmpty ? "六桁を打つ" : "揃った: \(codeDone)") {
                                 OneTimeCodeField(value: $code,
-                                                 mask: .init(showLabel: "コードを表示する",
-                                                             hideLabel: "コードを隠す")) { done in
+                                                 mask: .init(showValueLabel: "コードを表示する",
+                                                             hideValueLabel: "コードを隠す",
+                                                             revealedMessage: "コードを表示しました",
+                                                             hiddenMessage: "コードを隠しました")) { done in
                                     codeDone = done
                                 }
                             }

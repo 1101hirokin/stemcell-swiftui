@@ -40,7 +40,10 @@ struct OneTimeCodeProbe: View {
             OneTimeCodeField(value: $partial)
             Text("伏せた。見せ直す手段を部品が持つ").textStyle(.labelMd)
             OneTimeCodeField(value: $hidden,
-                             mask: .init(showLabel: "コードを表示する", hideLabel: "コードを隠す"))
+                             mask: .init(showValueLabel: "コードを表示する",
+                                         hideValueLabel: "コードを隠す",
+                                         revealedMessage: "コードを表示しました",
+                                         hiddenMessage: "コードを隠しました"))
             Text("不正").textStyle(.labelMd)
             OneTimeCodeField(value: $empty, invalid: true)
         }
@@ -64,6 +67,9 @@ struct OneTimeCodeStatesProbe: View {
             OneTimeCodeField(value: $four, length: 4)
             Text("英数字").textStyle(.labelMd)
             OneTimeCodeField(value: $alnum, charset: .alphanumeric)
+            Text("読むだけ / 段 sm と lg").textStyle(.labelMd)
+            OneTimeCodeField(value: $four, length: 4, readOnly: true)
+            OneTimeCodeField(value: $alnum, charset: .alphanumeric, size: .sm)
         }
         .padding(24)
         .frame(width: 520)
@@ -88,7 +94,7 @@ func shoot() {
         .preferredColorScheme(dark ? .dark : .light)
         .background(StemcellTheme.standard.colors.background.resolved)
     let host = NSHostingView(rootView: root)
-    host.frame = NSRect(x: 0, y: 0, width: 520, height: 420)
+    host.frame = NSRect(x: 0, y: 0, width: 520, height: 620)
     let win = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
     win.contentView = host
     // 画面の外へ置き、前面へは出さない。

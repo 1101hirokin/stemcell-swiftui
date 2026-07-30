@@ -50,10 +50,9 @@ private func sourceFiles() throws -> [(name: String, text: String)] {
 
     // まだ引けていないものは、ここへ理由と行き先を書いて通す。数が減る方向にしか動かさない。
     // hover はここに居たが、実装して外した。この検査が「外せ」と言って落ちた。
-    let 未実装: [String: String] = [
-        // 譲ったものは実装されない。理由が要るので、未実装と同じ場所に書く。
-        "focusRing": "HOLES #11。焦点の輪は platform へ譲った。ButtonStyle の中から焦点を知る道が無い",
-    ]
+    // focusRing も同じ道をたどった。Button では platform へ譲ったままだが（HOLES #11）、
+    // OneTimeCodeField が桁ごとの輪を描いて引いたので外した。
+    let 未実装: [String: String] = [:]
 
     let 引くべき役 = [
         "bg", "fg", "border", "bgHover", "bgPressed",
