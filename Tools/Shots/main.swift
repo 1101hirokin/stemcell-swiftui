@@ -22,11 +22,12 @@ enum Subjects {
         switch name {
         case "one-time-code": return AnyView(OneTimeCodeProbe())
         case "one-time-code-states": return AnyView(OneTimeCodeStatesProbe())
+        case "drop-area": return AnyView(DropAreaProbe())
         default: return nil
         }
     }
 
-    static var names: [String] { ["one-time-code", "one-time-code-states"] }
+    static var names: [String] { ["one-time-code", "one-time-code-states", "drop-area"] }
 }
 
 struct OneTimeCodeProbe: View {
@@ -48,7 +49,7 @@ struct OneTimeCodeProbe: View {
             OneTimeCodeField(value: $empty, invalid: true)
         }
         .padding(24)
-        .frame(width: 520)
+        .frame(width: 520, alignment: .leading)
         .stemcellTheme(.standard)
     }
 }
@@ -72,7 +73,29 @@ struct OneTimeCodeStatesProbe: View {
             OneTimeCodeField(value: $alnum, charset: .alphanumeric, size: .sm)
         }
         .padding(24)
-        .frame(width: 520)
+        .frame(width: 520, alignment: .leading)
+        .stemcellTheme(.standard)
+    }
+}
+
+struct DropAreaProbe: View {
+    var body: some View {
+        Stack(gap: "lg", align: .start) {
+            Text("常のとき").textStyle(.labelMd)
+            DropArea(label: "ファイルを落とす") { _ in } content: {
+                Stack(gap: "sm", align: .center) {
+                    Text("ここへ引いてきて放す").textStyle(.bodyMd)
+                    Button("ファイルを選ぶ") { }.buttonStyle(.stemcell(.outlined, size: .sm))
+                }
+            }
+            Text("使えない").textStyle(.labelMd)
+            DropArea(label: "ファイルを落とす") { _ in } content: {
+                Text("受け取れない").textStyle(.bodyMd)
+            }
+            .disabled(true)
+        }
+        .padding(24)
+        .frame(width: 520, alignment: .leading)
         .stemcellTheme(.standard)
     }
 }

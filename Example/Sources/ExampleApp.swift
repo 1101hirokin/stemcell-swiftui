@@ -35,6 +35,8 @@ struct Gallery: View {
     @State private var popOverDialog = false
     @State private var code = ""
     @State private var codeDone = ""
+    @State private var dropped: [String] = []
+    @State private var refused: [String] = []
 
     var body: some View {
         ScrollView {
@@ -135,6 +137,32 @@ struct Gallery: View {
                                                              hiddenMessage: "コードを隠しました")) { done in
                                     codeDone = done
                                 }
+                            }
+                        }
+                    }
+
+                    // 落とせる面。落ちてくる最中の姿は、実際に何かを引いてこないと出ない。
+                    // 押して選べる手段を中へ置くのは Normative である（WCAG 2.2 SC 2.5.7）。
+                    Row("落とす面") {
+                        Stack(gap: "sm", align: .start) {
+                            DropArea(accept: ["image/*"], label: "画像を落とす") { urls in
+                                dropped = urls.map(\.lastPathComponent)
+                            } onReject: { urls in
+                                refused = urls.map(\.lastPathComponent)
+                            } content: {
+                                Stack(gap: "sm", align: .center) {
+                                    Text("画像をここへ引いてきて放す").textStyle(.bodyMd)
+                                    Button("ファイルを選ぶ") { }
+                                        .buttonStyle(.stemcell(.outlined, size: .sm))
+                                }
+                            }
+                            if !dropped.isEmpty {
+                                Text("受け取った: \(dropped.joined(separator: ", "))").textStyle(.bodySm)
+                            }
+                            if !refused.isEmpty {
+                                Text("弾いた: \(refused.joined(separator: ", "))")
+                                    .textStyle(.bodySm)
+                                    .foregroundStyle(.stemcellMuted)
                             }
                         }
                     }

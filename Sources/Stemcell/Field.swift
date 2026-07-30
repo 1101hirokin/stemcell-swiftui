@@ -38,8 +38,9 @@ public struct Field<Content: View>: View {
         VStack(alignment: .leading, spacing: StemcellTokens.Spacing.Stack.sm) {
             // 視覚の標示は部品が出す（field.md §4 の裁定。多数派の側）。
             // 記号そのものは seed であって規範ではない。
-            // 連結は Text 同士でしかできないので、役を当てるのは連ねたあとである。
-            (Text(label) + Text(required ? " *" : "").foregroundColor(StemcellIntent.danger.colors.bg.resolved))
+            // 記号は差し込みで足す。`Text` 同士の `+` は macOS 26 で非推奨になった。
+            // 差し込みなら役を当てるのも一度で済む。
+            Text("\(label)\(Text(required ? " *" : "").foregroundColor(StemcellIntent.danger.colors.bg.resolved))")
                 .textStyle(.labelMd)
 
             content
