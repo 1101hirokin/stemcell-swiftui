@@ -59,6 +59,7 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
 
     func body(content base: Content) -> some View {
         #if os(iOS)
+        // 契約どおりに描ける土地。覆いが画面全体を取るので、幕を敷いて中央へ置ける。
         base.fullScreenCover(isPresented: $isPresented) {
             DialogSurface(dismiss: dismiss, isPresented: $isPresented,
                           title: title, content: self.content, actions: actions)
@@ -66,22 +67,58 @@ struct StemcellDialogModifier<T: View, C: View, A: View>: ViewModifier {
                 // （tokensRequired の scrim）、覆いの既定の地では色が指定できない。
                 .presentationBackground(.clear)
         }
-        // 退出を止めるのは native の口がある。ただし iOS の fullScreenCover は下へ引く
-        // 仕草をそもそも持たないので、ここは効いていない見込みが高い。macOS の sheet では
-        // 効く。無害なので両方に置いてあるが、iOS で意味を持つかは確かめていない。
+        // 退出を止めるのは native の口がある。ただし fullScreenCover は下へ引く仕草を
+        // そもそも持たないので、ここは効いていない見込みが高い。無害なので置いてある。
         .interactiveDismissDisabled(dismiss == .explicit)
         #else
+        // macOS はシートへ譲る。契約は modal を「ビューポート中央」に置き、背後へ幕を敷けと
+        // 定めるが（overlay.md §5）、macOS のシートは窓の上端から降りてきて背後を暗くしない。
+        // それが platform の作法である。同じものを持つ API も無い（fullScreenCover は iOS だけ）。
+        //
+        // 一度は契約どおりに描こうとして、シートの中へ幕を敷いた。ignoresSafeArea の
+        // 「いっぱい」がシートの中で止まるので、幕の箱の中に札の箱が入る二重の箱になった。
+        // 窓ではなくシートの寸法で幕が切れる。実機で見て捨てた。
+        //
+        // 位置と幕を platform へ譲る。面と角と影もシートが持つので描かない。書くのは
+        // 見出しと中身と脚の並びと、字の役だけである。焦点の捕捉と Escape は無償のまま残る。
+        // 裁定が要る。HOLES #19。
         base.sheet(isPresented: $isPresented) {
-            DialogSurface(dismiss: dismiss, isPresented: $isPresented,
-                          title: title, content: self.content, actions: actions)
-                .presentationBackground(.clear)
+            DialogSheetBody(title: title, content: self.content, actions: actions)
         }
         .interactiveDismissDisabled(dismiss == .explicit)
         #endif
     }
 }
 
-/// 幕と札。覆いの中身として描く。
+#if !os(iOS)
+/// macOS のシートの中身。面と角と影はシートが持つので描かない。
+struct DialogSheetBody<T: View, C: View, A: View>: View {
+    @ViewBuilder let title: () -> T
+    @ViewBuilder let content: () -> C
+    @ViewBuilder let actions: () -> A
+
+    @Environment(\.stemcellTheme) private var theme
+
+    var body: some View {
+        Box(inset: "lg") {
+            Stack(gap: "md", align: .start) {
+                title().textStyle(.titleMd)
+                content().textStyle(.bodyMd)
+                Stack(direction: .inline, gap: "md", align: .center) {
+                    Spacer(minLength: 0)
+                    actions()
+                }
+            }
+            .foregroundStyle(theme.colors.foreground.resolved)
+        }
+        // 読みやすい上限で止める。伸びるのは縦だけである（契約の expressive）。
+        .frame(minWidth: 320, idealWidth: 420, maxWidth: 420)
+    }
+}
+#endif
+
+#if os(iOS)
+/// 幕と札。覆いの中身として描く。iOS だけで使う。macOS はシートへ譲っている。
 struct DialogSurface<T: View, C: View, A: View>: View {
     let dismiss: DialogDismiss
     @Binding var isPresented: Bool
@@ -158,3 +195,4 @@ struct DialogSurface<T: View, C: View, A: View>: View {
         return d == 0 ? nil : .easeOut(duration: d)
     }
 }
+#endif
