@@ -1,7 +1,7 @@
 import SwiftUI
 import StemcellTokens
 
-/// 錨に対する開き方向（契約の `placement`。論理方向で持つ。layout.md §7）。
+/// アンカーに対する開き方向（契約の `placement`。論理方向で持つ。layout.md §7）。
 public enum PopoverPlacement: String, Sendable, CaseIterable {
     /// 下。既定。
     case blockEnd = "block-end"
@@ -17,10 +17,10 @@ public enum PopoverPlacement: String, Sendable, CaseIterable {
 }
 
 extension View {
-    /// 錨に従属する一時の面（契約の `Popover`）。この修飾子を錨へ当てる。
+    /// アンカーに従属する一時の面（契約の `Popover`）。この修飾子をアンカーへ当てる。
     ///
-    /// SwiftUI に `.popover` があるので、そこへ乗る。錨への位置決めも、外側を押したときの
-    /// 退出も、Escape も、焦点を中へ入れて閉じたら錨へ戻すことも、native が持っている。
+    /// SwiftUI に `.popover` があるので、そこへ乗る。アンカーへの位置決めも、外側を押したときの
+    /// 退出も、Escape も、焦点を中へ入れて閉じたらアンカーへ戻すことも、native が持っている。
     /// 契約が Normative としているのはそこまでで（`overlay.md` §5 は衝突回避を Expressive、
     /// §7 は焦点の写像を rules に委ねる）、自前で書くのは面と角と縁だけである。
     ///
@@ -35,7 +35,7 @@ extension View {
     ///
     /// - Parameters:
     ///   - isPresented: 開いているか。値であって状態ではない（overlay.md §6）。
-    ///   - placement: 錨に対する優先の開き方向。既定は下。
+    ///   - placement: アンカーに対する優先の開き方向。既定は下。
     ///   - content: 浮かぶ面の中身。役は消費者が与える（契約の slots）。
     public func stemcellPopover<C: View>(
         isPresented: Binding<Bool>,
@@ -60,7 +60,7 @@ struct StemcellPopoverModifier<C: View>: ViewModifier {
             arrowEdge: placement.arrowEdge
         ) {
             PopoverSurface(content: popoverContent)
-                // 狭い幅では SwiftUI が popover を sheet へ落とす。契約は錨への従属を
+                // 狭い幅では SwiftUI が popover を sheet へ落とす。契約はアンカーへの従属を
                 // Normative としているので（slots.anchor が「Popover はこれに従属して位置を
                 // 決める」）、落とさせない。
                 .presentationCompactAdaptation(.popover)
@@ -80,7 +80,7 @@ struct PopoverSurface<C: View>: View {
             content()
         }
         // 中身の高さを内容で止める。これが無いと、複数行の中身を渡したときに面が伸びて
-        // 画面の端で切られ、角丸も縁も見えないまま本文がちぎれる。錨が下寄りにあるほど
+        // 画面の端で切られ、角丸も縁も見えないまま本文がちぎれる。アンカーが下寄りにあるほど
         // 起きやすい。一行の中身では起きないので、気づきにくい。実機で見つかった。
         //
         // native は本来、余裕のある側へ向きを反転して収める。素の .popover ではそう動く。

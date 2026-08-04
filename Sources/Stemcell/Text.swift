@@ -76,7 +76,7 @@ public enum StemcellTextRole: String, Sendable, CaseIterable {
     ///
     /// `Font.system(size:)` は固定の大きさであって、Dynamic Type では伸びない。
     /// 前の版はここに `metrics.size` を直に渡していて、字が伸びなかった。iPad Pro 13 で
-    /// 標準と accessibility-extra-extra-extra-large を撮り比べ、見出しの墨の外接箱が
+    /// 標準と accessibility-extra-extra-extra-large を撮り比べ、見出しの字の輪郭の外接箱が
     /// どちらも 90.5 x 12.5pt で同じであることを測って分かった。
     ///
     /// 書体そのもの（CSS の font stack）はトークンから写せないので、その土地の既定に委ねる。

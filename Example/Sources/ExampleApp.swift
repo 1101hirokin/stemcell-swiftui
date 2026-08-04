@@ -170,8 +170,8 @@ struct Gallery: View {
                         }
                     }
 
-                    // 錨に従う一時の面。開き方向の二つと、覆いの上に出したときを見る。
-                    Row("錨に従う面") {
+                    // アンカーに従う一時の面。開き方向の二つと、覆いの上に出したときを見る。
+                    Row("アンカーに従う面") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
                             Button("下へ開く") { popDown = true }
                                 .buttonStyle(.stemcell(.soft))
