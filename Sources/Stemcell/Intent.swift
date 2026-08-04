@@ -110,6 +110,16 @@ public enum StemcellVariant: String, Sendable, CaseIterable {
 public enum StemcellSize: String, Sendable, CaseIterable {
     case sm, md, lg
 
+    /// native の段。姿を譲る部品（`PasteButton` など）へはこれを渡す。段そのものが
+    /// Ceded になるかは上流の未確定である（size.md §7）。
+    var controlSize: ControlSize {
+        switch self {
+        case .sm: return .small
+        case .md: return .regular
+        case .lg: return .large
+        }
+    }
+
     var inset: CGFloat {
         switch self {
         case .sm: return StemcellTokens.Spacing.Inset.sm

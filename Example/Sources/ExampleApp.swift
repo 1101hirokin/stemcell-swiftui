@@ -35,6 +35,8 @@ struct Gallery: View {
     @State private var popOverDialog = false
     @State private var code = ""
     @State private var codeDone = ""
+    @State private var picked: [URL] = []
+    @State private var inbox: [URL] = []
     @State private var dropped: [String] = []
     @State private var refused: [String] = []
 
@@ -145,10 +147,12 @@ struct Gallery: View {
                     // 押して選べる手段を中へ置くのは Normative である（WCAG 2.2 SC 2.5.7）。
                     Row("落とす面") {
                         Stack(gap: "sm", align: .start) {
-                            DropArea(accept: ["image/*"], label: "画像を落とす") { urls in
+                            // 面へは accept を渡さない。面が先に弾くと告知が二度に分かれ、
+                            // 後が前を上書きする（patterns/file-upload.md §4）。面はそのまま
+                            // 渡し、絞り込みも告知も値を持つ欄がまとめて行う。
+                            DropArea(label: "画像を落とす") { urls in
                                 dropped = urls.map(\.lastPathComponent)
-                            } onReject: { urls in
-                                refused = urls.map(\.lastPathComponent)
+                                inbox = urls
                             } content: {
                                 Stack(gap: "sm", align: .center) {
                                     Text("画像をここへ引いてきて放す").textStyle(.bodyMd)
@@ -163,6 +167,26 @@ struct Gallery: View {
                                 Text("弾いた: \(refused.joined(separator: ", "))")
                                     .textStyle(.bodySm)
                                     .foregroundStyle(.stemcellMuted)
+                            }
+                        }
+                    }
+
+                    // ファイルを選ぶ欄。選ばせるのは環境の選択画面で、貼り付けは
+                    // PasteButton が受ける。姿は環境が持つ（HOLES #29）。
+                    Row("ファイルを選ぶ") {
+                        Stack(gap: "sm", align: .start) {
+                            Field("添付", description: picked.isEmpty
+                                  ? "画像を選ぶ"
+                                  : picked.map(\.lastPathComponent).joined(separator: ", ")) {
+                                FileField(value: $picked, accept: ["image/*"], multiple: true,
+                                          triggerLabel: "ファイルを選ぶ",
+                                          pasteLabel: "貼り付ける",
+                                          receivedLabel: "{n} 件を受け取りました",
+                                          rejectedLabel: "{n} 件を弾きました",
+                                          incoming: $inbox) { _ in
+                                } onReject: { urls in
+                                    refused = urls.map(\.lastPathComponent)
+                                }
                             }
                         }
                     }
