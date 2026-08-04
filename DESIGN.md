@@ -155,6 +155,16 @@ swift run Shots <題目> <出力.png> [待ち秒] [dark]
 題目は `Tools/Shots/main.swift` の `Subjects` に足す。部品を並べた View を一つ書けば、
 そのまま焼ける対象になる。sheet は別の窓として出るので `attachedSheet` から辿る。
 
+見本そのものは `Tools/shoot-ios.sh` で撮る。`Gallery` は Example の側にあって `Shots` から
+見えないので、そちらはシミュレータへ入れる。
+
+```
+DEVICE=<UDID> Tools/shoot-ios.sh out.png dark
+```
+
+どちらの道具も repo に置いてある。前は一時の場所へ書いていて、消えるたびに組み直した。
+二度やったので repo へ移した。
+
 | 撮りたいもの | 手 | 画面が要るか |
 |---|---|---|
 | View 単体 | `ImageRenderer` | 要らない |
