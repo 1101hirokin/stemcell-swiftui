@@ -39,11 +39,31 @@ struct Gallery: View {
     @State private var inbox: [URL] = []
     @State private var dropped: [String] = []
     @State private var refused: [String] = []
+    // 暗いテーマを見る手段。トークンは DynamicColor で明暗の対を持つので、
+    // 環境の配色を変えれば全部が追随する。追随しない部品はここで見つかる。
+    @State private var scheme: ColorScheme? = nil
+    @State private var hiddenLabel = ""
+    @State private var alnumCode = ""
+    @State private var otpInvalid = ""
+    @State private var attach: [URL] = []
 
     var body: some View {
         ScrollView {
             Box(inset: "lg") {
                 Stack(gap: "lg") {
+                    // 配色を切り替える。暗いテーマで面が消える、字が読めない、幕が効かない
+                    // といったことは、切り替えて初めて見える。
+                    Row("配色") {
+                        Stack(direction: .inline, gap: "sm", align: .center) {
+                            Button("環境に従う") { scheme = nil }
+                                .buttonStyle(.stemcell(scheme == nil ? .filled : .outlined, size: .sm))
+                            Button("明るい") { scheme = .light }
+                                .buttonStyle(.stemcell(scheme == .light ? .filled : .outlined, size: .sm))
+                            Button("暗い") { scheme = .dark }
+                                .buttonStyle(.stemcell(scheme == .dark ? .filled : .outlined, size: .sm))
+                        }
+                    }
+
                     Row("ボタンの強調度") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
                             ForEach(StemcellVariant.allCases, id: \.self) { variant in
@@ -118,6 +138,12 @@ struct Gallery: View {
                                 TextField("", text: $readOnly)
                                     .fieldStyle(readOnly: true)
                             }
+                            // 名前を視覚から隠す。支援技術には届いたままにする
+                            // （field.md §2）。見出しが文脈を語っていて名前が重なる場面。
+                            Field("検索", labelHidden: true) {
+                                TextField("見出しが文脈を語るので名前を隠す", text: $hiddenLabel)
+                                    .fieldStyle()
+                            }
                             Toggle("入り切り", isOn: $on)
                                 .toggleStyle(.stemcellSwitch)
                             Toggle("四角い印", isOn: $checked)
@@ -131,6 +157,13 @@ struct Gallery: View {
                     // 自動入力も貼り付けも、その一つに紐づく（契約の裁定）。
                     Row("確認コード") {
                         Stack(gap: "sm", align: .start) {
+                            Text("英数字。鍵盤の指定は charset から導く").textStyle(.labelMd)
+                            OneTimeCodeField(value: $alnumCode, length: 4, charset: .alphanumeric)
+                            Text("不正 / 使えない / 段 sm").textStyle(.labelMd)
+                            OneTimeCodeField(value: $otpInvalid, length: 4, invalid: true)
+                            OneTimeCodeField(value: $otpInvalid, length: 4).disabled(true)
+                            OneTimeCodeField(value: $alnumCode, length: 4, size: .sm)
+                            Text("伏せる。見せ直す手段を部品が必ず持つ").textStyle(.labelMd)
                             Field("コード", description: codeDone.isEmpty ? "六桁を打つ" : "揃った: \(codeDone)") {
                                 OneTimeCodeField(value: $code,
                                                  mask: .init(showValueLabel: "コードを表示する",
@@ -168,6 +201,11 @@ struct Gallery: View {
                                     .textStyle(.bodySm)
                                     .foregroundStyle(.stemcellMuted)
                             }
+                            Text("使えないとき").textStyle(.labelMd)
+                            DropArea(label: "いまは受け取れない") { _ in } content: {
+                                Text("受け取れない").textStyle(.bodyMd)
+                            }
+                            .disabled(true)
                         }
                     }
 
@@ -187,6 +225,13 @@ struct Gallery: View {
                                 } onReject: { urls in
                                     refused = urls.map(\.lastPathComponent)
                                 }
+                            }
+                            Text("不正 / 使えない / 段 sm と lg").textStyle(.labelMd)
+                            FileField(value: $attach, invalid: true, triggerLabel: "ファイルを選ぶ")
+                            FileField(value: $attach, triggerLabel: "ファイルを選ぶ").disabled(true)
+                            Stack(direction: .inline, gap: "sm", align: .center) {
+                                FileField(value: $attach, size: .sm, triggerLabel: "sm")
+                                FileField(value: $attach, size: .lg, triggerLabel: "lg")
                             }
                         }
                     }
@@ -293,6 +338,7 @@ struct Gallery: View {
             }
         }
         .background(theme.colors.background.resolved)
+        .preferredColorScheme(scheme)
         .stemcellDensity(density)
         .stemcellDialog(isPresented: $lightOpen) {
             Text("下書きを捨てる")
