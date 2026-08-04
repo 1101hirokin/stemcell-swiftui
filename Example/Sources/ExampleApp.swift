@@ -51,7 +51,7 @@ struct Gallery: View {
         ScrollView {
             Box(inset: "lg") {
                 Stack(gap: "lg") {
-                    // 配色を切り替える。暗いテーマで面が消える、字が読めない、幕が効かない
+                    // 配色を切り替える。暗いテーマで面が消える、字が読めない、scrim が効かない
                     // といったことは、切り替えて初めて見える。
                     Row("配色") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
