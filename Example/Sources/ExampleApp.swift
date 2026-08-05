@@ -33,11 +33,37 @@ struct Gallery: View {
     @State private var popDown = false
     @State private var popUp = false
     @State private var popOverDialog = false
+    @State private var code = ""
+    @State private var codeDone = ""
+    @State private var picked: [URL] = []
+    @State private var inbox: [URL] = []
+    @State private var dropped: [String] = []
+    @State private var refused: [String] = []
+    // 暗いテーマを見る手段。トークンは DynamicColor で明暗の対を持つので、
+    // 環境の配色を変えれば全部が追随する。追随しない部品はここで見つかる。
+    @State private var scheme: ColorScheme? = nil
+    @State private var hiddenLabel = ""
+    @State private var alnumCode = ""
+    @State private var otpInvalid = ""
+    @State private var attach: [URL] = []
 
     var body: some View {
         ScrollView {
             Box(inset: "lg") {
                 Stack(gap: "lg") {
+                    // 配色を切り替える。暗いテーマで面が消える、字が読めない、scrim が効かない
+                    // といったことは、切り替えて初めて見える。
+                    Row("配色") {
+                        Stack(direction: .inline, gap: "sm", align: .center) {
+                            Button("環境に従う") { scheme = nil }
+                                .buttonStyle(.stemcell(scheme == nil ? .filled : .outlined, size: .sm))
+                            Button("明るい") { scheme = .light }
+                                .buttonStyle(.stemcell(scheme == .light ? .filled : .outlined, size: .sm))
+                            Button("暗い") { scheme = .dark }
+                                .buttonStyle(.stemcell(scheme == .dark ? .filled : .outlined, size: .sm))
+                        }
+                    }
+
                     Row("ボタンの強調度") {
                         Stack(direction: .inline, gap: "sm", align: .center) {
                             ForEach(StemcellVariant.allCases, id: \.self) { variant in
@@ -112,12 +138,101 @@ struct Gallery: View {
                                 TextField("", text: $readOnly)
                                     .fieldStyle(readOnly: true)
                             }
+                            // 名前を視覚から隠す。支援技術には届いたままにする
+                            // （field.md §2）。見出しが文脈を語っていて名前が重なる場面。
+                            Field("検索", labelHidden: true) {
+                                TextField("見出しが文脈を語るので名前を隠す", text: $hiddenLabel)
+                                    .fieldStyle()
+                            }
                             Toggle("入り切り", isOn: $on)
                                 .toggleStyle(.stemcellSwitch)
                             Toggle("四角い印", isOn: $checked)
                                 .toggleStyle(.stemcellCheckbox)
                             Toggle("第三の値", isOn: $mixed)
                                 .toggleStyle(.stemcellCheckbox(indeterminate: true, mixedValueLabel: "どちらでもない"))
+                        }
+                    }
+
+                    // 確認コード。枠は桁の数だけ並ぶが、打てる欄は一つである。
+                    // 自動入力も貼り付けも、その一つに紐づく（契約の裁定）。
+                    Row("確認コード") {
+                        Stack(gap: "sm", align: .start) {
+                            Text("英数字。鍵盤の指定は charset から導く").textStyle(.labelMd)
+                            OneTimeCodeField(value: $alnumCode, length: 4, charset: .alphanumeric)
+                            Text("不正 / 使えない / 段 sm").textStyle(.labelMd)
+                            OneTimeCodeField(value: $otpInvalid, length: 4, invalid: true)
+                            OneTimeCodeField(value: $otpInvalid, length: 4).disabled(true)
+                            OneTimeCodeField(value: $alnumCode, length: 4, size: .sm)
+                            Text("伏せる。見せ直す手段を部品が必ず持つ").textStyle(.labelMd)
+                            Field("コード", description: codeDone.isEmpty ? "六桁を打つ" : "揃った: \(codeDone)") {
+                                OneTimeCodeField(value: $code,
+                                                 mask: .init(showValueLabel: "コードを表示する",
+                                                             hideValueLabel: "コードを隠す",
+                                                             revealedMessage: "コードを表示しました",
+                                                             hiddenMessage: "コードを隠しました")) { done in
+                                    codeDone = done
+                                }
+                            }
+                        }
+                    }
+
+                    // 落とせる面。落ちてくる最中の姿は、実際に何かを引いてこないと出ない。
+                    // 押して選べる手段を中へ置くのは Normative である（WCAG 2.2 SC 2.5.7）。
+                    Row("落とす面") {
+                        Stack(gap: "sm", align: .start) {
+                            // 面へは accept を渡さない。面が先に弾くと告知が二度に分かれ、
+                            // 後が前を上書きする（patterns/file-upload.md §4）。面はそのまま
+                            // 渡し、絞り込みも告知も値を持つ欄がまとめて行う。
+                            DropArea(label: "画像を落とす") { urls in
+                                dropped = urls.map(\.lastPathComponent)
+                                inbox = urls
+                            } content: {
+                                Stack(gap: "sm", align: .center) {
+                                    Text("画像をここへ引いてきて放す").textStyle(.bodyMd)
+                                    Button("ファイルを選ぶ") { }
+                                        .buttonStyle(.stemcell(.outlined, size: .sm))
+                                }
+                            }
+                            if !dropped.isEmpty {
+                                Text("受け取った: \(dropped.joined(separator: ", "))").textStyle(.bodySm)
+                            }
+                            if !refused.isEmpty {
+                                Text("弾いた: \(refused.joined(separator: ", "))")
+                                    .textStyle(.bodySm)
+                                    .foregroundStyle(.stemcellMuted)
+                            }
+                            Text("使えないとき").textStyle(.labelMd)
+                            DropArea(label: "いまは受け取れない") { _ in } content: {
+                                Text("受け取れない").textStyle(.bodyMd)
+                            }
+                            .disabled(true)
+                        }
+                    }
+
+                    // ファイルを選ぶ欄。選ばせるのは環境の選択画面で、貼り付けは
+                    // PasteButton が受ける。姿は環境が持つ（HOLES #29）。
+                    Row("ファイルを選ぶ") {
+                        Stack(gap: "sm", align: .start) {
+                            Field("添付", description: picked.isEmpty
+                                  ? "画像を選ぶ"
+                                  : picked.map(\.lastPathComponent).joined(separator: ", ")) {
+                                FileField(value: $picked, accept: ["image/*"], multiple: true,
+                                          triggerLabel: "ファイルを選ぶ",
+                                          pasteLabel: "貼り付ける",
+                                          receivedLabel: "{n} 件を受け取りました",
+                                          rejectedLabel: "{n} 件を弾きました",
+                                          incoming: $inbox) { _ in
+                                } onReject: { urls in
+                                    refused = urls.map(\.lastPathComponent)
+                                }
+                            }
+                            Text("不正 / 使えない / 段 sm と lg").textStyle(.labelMd)
+                            FileField(value: $attach, invalid: true, triggerLabel: "ファイルを選ぶ")
+                            FileField(value: $attach, triggerLabel: "ファイルを選ぶ").disabled(true)
+                            Stack(direction: .inline, gap: "sm", align: .center) {
+                                FileField(value: $attach, size: .sm, triggerLabel: "sm")
+                                FileField(value: $attach, size: .lg, triggerLabel: "lg")
+                            }
                         }
                     }
 
@@ -223,6 +338,7 @@ struct Gallery: View {
             }
         }
         .background(theme.colors.background.resolved)
+        .preferredColorScheme(scheme)
         .stemcellDensity(density)
         .stemcellDialog(isPresented: $lightOpen) {
             Text("下書きを捨てる")
@@ -231,7 +347,7 @@ struct Gallery: View {
         } actions: {
             Stack(direction: .inline, gap: "sm", align: .center) {
                 Button("面を重ねる") { popOverDialog = true }
-                    .buttonStyle(.stemcell(.soft))
+                    .buttonStyle(.stemcell(.outlined))
                     .stemcellPopover(isPresented: $popOverDialog) {
                         Text("覆いの上に出した面").textStyle(.bodySm)
                     }

@@ -64,12 +64,7 @@ public struct StemcellFieldStyle<Start: View, End: View>: ViewModifier {
         isEnabled ? theme.colors.foreground.resolved : DisabledColors.fg.resolved
     }
 
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Duration.fast02
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 
 
     /// 不正は intent を danger へ差し替える（state.md §7）。判定はアプリが持つ。

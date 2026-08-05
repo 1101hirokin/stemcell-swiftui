@@ -75,12 +75,7 @@ public struct StemcellCheckboxToggleStyle: ToggleStyle {
             : theme.colors.primaryBackground).resolved
     }
 
-    private var transition: Animation? {
-        let d = reduceMotion
-            ? StemcellTokens.Motion.None.duration
-            : StemcellTokens.Motion.Duration.fast02
-        return d == 0 ? nil : .easeOut(duration: d)
-    }
+    private var transition: Animation? { StemcellMotion.feedback(reduceMotion) }
 
     @ViewBuilder
     private func mark(on: Bool) -> some View {

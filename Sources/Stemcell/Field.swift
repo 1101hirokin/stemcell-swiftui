@@ -13,6 +13,7 @@ public struct Field<Content: View>: View {
     private let description: String?
     private let error: String?
     private let required: Bool
+    private let labelHidden: Bool
     private let content: Content
 
     /// - Parameters:
@@ -25,12 +26,14 @@ public struct Field<Content: View>: View {
         description: String? = nil,
         error: String? = nil,
         required: Bool = false,
+        labelHidden: Bool = false,
         @ViewBuilder content: () -> Content
     ) {
         self.label = label
         self.description = description
         self.error = error
         self.required = required
+        self.labelHidden = labelHidden
         self.content = content()
     }
 
@@ -38,9 +41,15 @@ public struct Field<Content: View>: View {
         VStack(alignment: .leading, spacing: StemcellTokens.Spacing.Stack.sm) {
             // 視覚の標示は部品が出す（field.md §4 の裁定。多数派の側）。
             // 記号そのものは seed であって規範ではない。
-            // 連結は Text 同士でしかできないので、役を当てるのは連ねたあとである。
-            (Text(label) + Text(required ? " *" : "").foregroundColor(StemcellIntent.danger.colors.bg.resolved))
-                .textStyle(.labelMd)
+            // 記号は差し込みで足す。`Text` 同士の `+` は macOS 26 で非推奨になった。
+            // 差し込みなら役を当てるのも一度で済む。
+            // 名前を視覚から隠す（field.md §2 の prop）。支援技術には届いたままにする。
+            // 見出しが文脈を語っていて欄の名前が重なる場面のためにある。
+            // 名前そのものは下の `.accessibilityLabel` が持つので、ここで描かなければよい。
+            if !labelHidden {
+                Text("\(label)\(Text(required ? " *" : "").foregroundColor(StemcellIntent.danger.colors.bg.resolved))")
+                    .textStyle(.labelMd)
+            }
 
             content
 

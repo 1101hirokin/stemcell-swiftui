@@ -34,6 +34,10 @@ struct IntentColors {
     let bg, fg, border: DynamicColor
     let bgHover, bgPressed: DynamicColor
     let softBg, softFg, softBgHover, softBgPressed: DynamicColor
+    /// 焦点の輪の色。輪そのものは native が描くので、多くの部品はこれを引かない
+    /// （HOLES #11）。引くのは、native の輪が指す先と契約が指す先が違う場所である。
+    /// `OneTimeCodeField` は枠の並び全体ではなく、いま打っている桁に輪を出す。
+    let focusRing: DynamicColor
 }
 
 extension StemcellIntent {
@@ -51,7 +55,8 @@ extension StemcellIntent {
                 softBg: .init(light: L.Primary.softBg, dark: D.Primary.softBg),
                 softFg: .init(light: L.Primary.softFg, dark: D.Primary.softFg),
                 softBgHover: .init(light: L.Primary.softBgHover, dark: D.Primary.softBgHover),
-                softBgPressed: .init(light: L.Primary.softBgPressed, dark: D.Primary.softBgPressed)
+                softBgPressed: .init(light: L.Primary.softBgPressed, dark: D.Primary.softBgPressed),
+                focusRing: .init(light: L.Primary.focusRing, dark: D.Primary.focusRing)
             )
         case .danger:
             return IntentColors(
@@ -63,7 +68,8 @@ extension StemcellIntent {
                 softBg: .init(light: L.Danger.softBg, dark: D.Danger.softBg),
                 softFg: .init(light: L.Danger.softFg, dark: D.Danger.softFg),
                 softBgHover: .init(light: L.Danger.softBgHover, dark: D.Danger.softBgHover),
-                softBgPressed: .init(light: L.Danger.softBgPressed, dark: D.Danger.softBgPressed)
+                softBgPressed: .init(light: L.Danger.softBgPressed, dark: D.Danger.softBgPressed),
+                focusRing: .init(light: L.Danger.focusRing, dark: D.Danger.focusRing)
             )
         case .warning:
             return IntentColors(
@@ -75,7 +81,8 @@ extension StemcellIntent {
                 softBg: .init(light: L.Warning.softBg, dark: D.Warning.softBg),
                 softFg: .init(light: L.Warning.softFg, dark: D.Warning.softFg),
                 softBgHover: .init(light: L.Warning.softBgHover, dark: D.Warning.softBgHover),
-                softBgPressed: .init(light: L.Warning.softBgPressed, dark: D.Warning.softBgPressed)
+                softBgPressed: .init(light: L.Warning.softBgPressed, dark: D.Warning.softBgPressed),
+                focusRing: .init(light: L.Warning.focusRing, dark: D.Warning.focusRing)
             )
         case .plain:
             return IntentColors(
@@ -87,7 +94,8 @@ extension StemcellIntent {
                 softBg: .init(light: L.Plain.softBg, dark: D.Plain.softBg),
                 softFg: .init(light: L.Plain.softFg, dark: D.Plain.softFg),
                 softBgHover: .init(light: L.Plain.softBgHover, dark: D.Plain.softBgHover),
-                softBgPressed: .init(light: L.Plain.softBgPressed, dark: D.Plain.softBgPressed)
+                softBgPressed: .init(light: L.Plain.softBgPressed, dark: D.Plain.softBgPressed),
+                focusRing: .init(light: L.Plain.focusRing, dark: D.Plain.focusRing)
             )
         }
     }
@@ -101,6 +109,16 @@ public enum StemcellVariant: String, Sendable, CaseIterable {
 /// 段（size.md §2）。段が引くのは内側余白と当たり判定の下限だけで、文字は引かない。
 public enum StemcellSize: String, Sendable, CaseIterable {
     case sm, md, lg
+
+    /// native の段。姿を譲る部品（`PasteButton` など）へはこれを渡す。段そのものが
+    /// Ceded になるかは上流の未確定である（size.md §7）。
+    var controlSize: ControlSize {
+        switch self {
+        case .sm: return .small
+        case .md: return .regular
+        case .lg: return .large
+        }
+    }
 
     var inset: CGFloat {
         switch self {
