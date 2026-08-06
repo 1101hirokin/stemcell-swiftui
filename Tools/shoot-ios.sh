@@ -1,7 +1,10 @@
 #!/bin/bash
 # 見本を iOS シミュレータへ入れて撮る（DESIGN.md §7.1）。
 #
-#   Tools/shoot-ios.sh <出力.png> [light|dark]
+#   Tools/shoot-ios.sh <出力.png> [light|dark] [--full [幅pt]]
+#
+# --full を付けると、画面に出ている一画面ではなく巻物の全体を一枚で焼く。見本の側の
+# ImageRenderer に描かせて、装置の書類の場所から取り出す。幅の既定は 1000pt。
 #
 # 装置は DEVICE で選ぶ。既定は起動中のもの。
 #
@@ -52,6 +55,18 @@ PLIST
 xcrun simctl ui "$DEVICE" appearance "$APPEARANCE" >/dev/null 2>&1 || true
 xcrun simctl terminate "$DEVICE" "$BUNDLE" >/dev/null 2>&1 || true
 xcrun simctl install "$DEVICE" "$STAGE"
-xcrun simctl launch "$DEVICE" "$BUNDLE" >/dev/null
-sleep 4
-xcrun simctl io "$DEVICE" screenshot "$OUT"
+
+if [ "$3" = "--full" ]; then
+  WIDTH=${4:-1000}
+  DARK=""
+  [ "$APPEARANCE" = "dark" ] && DARK="--dark"
+  xcrun simctl launch "$DEVICE" "$BUNDLE" --shoot "$WIDTH" $DARK >/dev/null
+  sleep 6
+  SRC="$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)/Documents/full.png"
+  cp "$SRC" "$OUT"
+  echo "巻物の全体を $OUT へ書いた"
+else
+  xcrun simctl launch "$DEVICE" "$BUNDLE" >/dev/null
+  sleep 4
+  xcrun simctl io "$DEVICE" screenshot "$OUT"
+fi

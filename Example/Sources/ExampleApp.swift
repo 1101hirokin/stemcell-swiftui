@@ -10,6 +10,10 @@ struct ExampleApp: App {
         WindowGroup {
             Gallery()
                 .stemcellTheme(.standard)
+                // 巻物の全体を一枚に焼く口（DESIGN.md §7.1）。画面には一画面ぶんしか
+                // 出ないので、下の行が見られない。`--shoot <幅>` を渡すと ImageRenderer で
+                // 丸ごと描いて書き出す。`Tools/shoot-ios.sh --full` がこれを使う。
+                .task { await FullShot.writeIfAsked() }
         }
         #if os(macOS)
         .defaultSize(width: 520, height: 720)
@@ -18,6 +22,10 @@ struct ExampleApp: App {
 }
 
 struct Gallery: View {
+    /// 巻くかどうか。焼くときは巻かない。`ImageRenderer` は `ScrollView` を渡されると
+    /// 中身を描かず、大きさだけ持った白い絵を返す。実際に返ってきた。
+    var scrolls = true
+
     @Environment(\.stemcellTheme) private var theme
     @State private var density: StemcellDensity = .comfortable
     // 束縛は値を持たせる。.constant() だと書いても入り切りしても戻ってしまい、
@@ -48,8 +56,43 @@ struct Gallery: View {
     @State private var attach: [URL] = []
 
     var body: some View {
-        ScrollView {
-            Box(inset: "lg") {
+        Group {
+            if scrolls {
+                ScrollView { rows }
+            } else {
+                rows
+            }
+        }
+        .background(theme.colors.background.resolved)
+        .preferredColorScheme(scheme)
+        .stemcellDensity(density)
+        .stemcellDialog(isPresented: $lightOpen) {
+            Text("下書きを捨てる")
+        } content: {
+            Text("この画面で書いたものは残りません。背後を押すか Escape でも閉じられます。")
+        } actions: {
+            Stack(direction: .inline, gap: "sm", align: .center) {
+                Button("面を重ねる") { popOverDialog = true }
+                    .buttonStyle(.stemcell(.outlined))
+                    .stemcellPopover(isPresented: $popOverDialog) {
+                        Text("覆いの上に出した面").textStyle(.bodySm)
+                    }
+                Button("閉じる") { lightOpen = false }.buttonStyle(.stemcell(.text))
+            }
+        }
+        .stemcellDialog(isPresented: $explicitOpen, dismiss: .explicit) {
+            Text("本当に消しますか")
+        } content: {
+            Text("消したものは戻せません。背後を押しても Escape を押しても閉じません。")
+        } actions: {
+            Button("やめる") { explicitOpen = false }.buttonStyle(.stemcell(.text))
+            Button("消す") { explicitOpen = false }.buttonStyle(.stemcell(.filled, color: .danger))
+        }
+    }
+
+    /// 行の並び。巻物の外側を外して、そのままの大きさで焼けるようにしてある。
+    private var rows: some View {
+        Box(inset: "lg") {
                 Stack(gap: "lg") {
                     // 配色を切り替える。暗いテーマで面が消える、字が読めない、scrim が効かない
                     // といったことは、切り替えて初めて見える。
@@ -336,32 +379,6 @@ struct Gallery: View {
                     }
                 }
             }
-        }
-        .background(theme.colors.background.resolved)
-        .preferredColorScheme(scheme)
-        .stemcellDensity(density)
-        .stemcellDialog(isPresented: $lightOpen) {
-            Text("下書きを捨てる")
-        } content: {
-            Text("この画面で書いたものは残りません。背後を押すか Escape でも閉じられます。")
-        } actions: {
-            Stack(direction: .inline, gap: "sm", align: .center) {
-                Button("面を重ねる") { popOverDialog = true }
-                    .buttonStyle(.stemcell(.outlined))
-                    .stemcellPopover(isPresented: $popOverDialog) {
-                        Text("覆いの上に出した面").textStyle(.bodySm)
-                    }
-                Button("閉じる") { lightOpen = false }.buttonStyle(.stemcell(.text))
-            }
-        }
-        .stemcellDialog(isPresented: $explicitOpen, dismiss: .explicit) {
-            Text("本当に消しますか")
-        } content: {
-            Text("消したものは戻せません。背後を押しても Escape を押しても閉じません。")
-        } actions: {
-            Button("やめる") { explicitOpen = false }.buttonStyle(.stemcell(.text))
-            Button("消す") { explicitOpen = false }.buttonStyle(.stemcell(.filled, color: .danger))
-        }
     }
 }
 
@@ -380,5 +397,45 @@ struct Row<Content: View>: View {
             Text(title).textStyle(.titleSm)
             content
         }
+    }
+}
+
+
+/// 巻物の全体を一枚に焼く。撮るためだけの口である。
+///
+/// `simctl io screenshot` は画面に出ているものしか撮れないので、巻物の下は届かない。
+/// `ImageRenderer` は View を好きな大きさで描けるので、そちらへ渡す。
+///
+/// 二つ癖がある。`ScrollView` を渡すと中身を描かず、大きさだけ持った白い絵を返す。だから
+/// `Gallery(scrolls: false)` を渡す。もう一つ、UIKit が背後にいる部品（`TextField` など）を
+/// 素通しでは描かず、地に色を置く。確認コードの欄は枠のあいだに黄色い帯が出るが、実機では
+/// 出ない。撮り比べて確かめた。姿の判断はこの絵でしないこと。
+enum FullShot {
+    @MainActor
+    static func writeIfAsked() async {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "--shoot"), i + 1 < args.count,
+              let width = Double(args[i + 1]) else { return }
+
+        let renderer = ImageRenderer(content:
+            Gallery(scrolls: false)
+                .stemcellTheme(.standard)
+                .frame(width: width)
+                .environment(\.colorScheme, args.contains("--dark") ? .dark : .light)
+        )
+        renderer.scale = 2
+        guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        else { return }
+        let out = dir.appendingPathComponent("full.png")
+
+        #if canImport(UIKit)
+        guard let data = renderer.uiImage?.pngData() else { return }
+        #else
+        guard let img = renderer.nsImage,
+              let tiff = img.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let data = rep.representation(using: .png, properties: [:]) else { return }
+        #endif
+        try? data.write(to: out)
     }
 }
