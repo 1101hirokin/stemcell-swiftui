@@ -162,6 +162,18 @@ swift run Shots <題目> <出力.png> [待ち秒] [dark]
 DEVICE=<UDID> Tools/shoot-ios.sh out.png dark
 ```
 
+巻物の下まで見たいときは `--full` を付ける。画面に出ている一画面ではなく、見本の側の
+`ImageRenderer` に全体を描かせて取り出す。
+
+```
+DEVICE=<UDID> Tools/shoot-ios.sh out.png dark --full 900
+```
+
+`ImageRenderer` には癖が二つある。`ScrollView` を渡すと中身を描かず大きさだけ持った白い絵を
+返すので、見本は巻かない形も持っている。UIKit が背後にいる部品も素通しでは描かず、地に色を
+置く。確認コードの欄は枠のあいだに黄色い帯が出るが、実機では出ない。撮り比べて確かめた。
+姿の判断はこの絵でしないこと。行がすべて出ているかを見るための道具である。
+
 どちらの道具も repo に置いてある。前は一時の場所へ書いていて、消えるたびに組み直した。
 二度やったので repo へ移した。
 
